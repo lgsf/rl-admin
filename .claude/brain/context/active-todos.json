@@ -1,17 +1,50 @@
 {
   "todos": {
-    "in_progress": [],
-    "pending": [],
-    "completed": [
+    "in_progress": [
       {
         "id": "1",
-        "content": "Commit profile sync and username validation fixes"
-      },
+        "content": "Design hybrid appearance settings strategy"
+      }
+    ],
+    "pending": [
       {
         "id": "2",
-        "content": "Fix account form - connect to Convex for persistence"
+        "content": "Extend database schema - add font to preferences, add lastSync timestamp"
+      },
+      {
+        "id": "3",
+        "content": "Create getAppearanceSettings query in Convex"
+      },
+      {
+        "id": "4",
+        "content": "Create updateAppearanceSettings mutation with optimistic updates"
+      },
+      {
+        "id": "5",
+        "content": "Build useAppearanceSync hook for read logic (localStorage → database fallback)"
+      },
+      {
+        "id": "6",
+        "content": "Implement write-through cache pattern (localStorage + database sync)"
+      },
+      {
+        "id": "7",
+        "content": "Add conflict resolution logic (handle localStorage vs database differences)"
+      },
+      {
+        "id": "8",
+        "content": "Update AppearanceForm to use new sync system"
+      },
+      {
+        "id": "9",
+        "content": "Add sync status indicator UI"
+      },
+      {
+        "id": "10",
+        "content": "Test cross-device sync and edge cases"
       }
-    ]
+    ],
+    "completed": []
   },
-  "last_update": "2025-08-09T20:40:45Z"
+  "last_update": "2025-08-09T20:51:27Z"
 }
