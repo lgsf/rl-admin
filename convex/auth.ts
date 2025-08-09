@@ -5,11 +5,100 @@ import { v } from "convex/values";
  * Store user data from Clerk after authentication
  * This is called automatically when a user signs in
  */
+// This mutation is called by ConvexProviderWithClerk to sync user data
+export const getOrCreateUser = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    console.log("getOrCreateUser - identity:", identity ? "Found" : "Not found");
+    if (!identity) {
+      console.error("No identity in getOrCreateUser");
+      throw new Error("Unauthorized: No identity found");
+    }
+
+    // Extract user info from Clerk JWT token - using the official Convex template claims
+    const { 
+      subject: clerkId, 
+      email, 
+      name, 
+      picture,
+      nickname,
+      given_name,
+      family_name,
+    } = identity as any; // Type assertion needed for custom claims
+    
+    if (!email) {
+      throw new Error("Email is required");
+    }
+
+    // Check if user already exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+      .unique();
+
+    if (existingUser) {
+      // Update last seen
+      await ctx.db.patch(existingUser._id, {
+        lastSeenAt: Date.now(),
+      });
+      return existingUser._id;
+    }
+
+    // Create new user
+    const userId = await ctx.db.insert("users", {
+      clerkId,
+      email,
+      firstName: given_name || "",
+      lastName: family_name || "",
+      username: nickname || email.split("@")[0],
+      avatar: picture,
+      role: "user" as const,
+      status: "active" as const,
+      preferences: {},
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      lastSeenAt: Date.now(),
+    });
+
+    // Check if this is the first user (make them admin)
+    const userCount = await ctx.db.query("users").collect();
+    if (userCount.length === 1) {
+      await ctx.db.patch(userId, { role: "admin" as const });
+    }
+
+    // Create default organization for the user if needed
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+      .unique();
+
+    if (!org) {
+      const orgId = await ctx.db.insert("organizations", {
+        name: `${name || email.split("@")[0]}'s Organization`,
+        slug: `org-${clerkId.substring(0, 8)}`,
+        ownerId: userId,
+        plan: "free" as const,
+        settings: {},
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      // Update user with organization
+      await ctx.db.patch(userId, { organizationId: orgId });
+    }
+
+    return userId;
+  }
+});
+
 export const store = mutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
+    console.log("Auth store - identity:", identity ? "Found" : "Not found");
     if (!identity) {
+      console.error("No identity in store mutation");
       throw new Error("Unauthorized: No identity found");
     }
 

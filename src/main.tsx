@@ -8,8 +8,9 @@ import {
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { ConvexReactClient } from "convex/react"
-import { ClerkProvider, useAuth } from "@clerk/clerk-react"
+import { ClerkProvider } from "@clerk/clerk-react"
 import { ConvexProviderWithClerk } from "convex/react-clerk"
+import { useAuth } from "@clerk/clerk-react"
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { handleServerError } from '@/utils/handle-server-error'
