@@ -1,130 +1,63 @@
 {
   "todos": {
-    "in_progress": [],
+    "in_progress": [
+      {
+        "id": "2",
+        "content": "Fix groups.ts Convex backend functions"
+      }
+    ],
     "pending": [
       {
-        "id": "29",
-        "content": "Create UI for group management"
+        "id": "3",
+        "content": "Create validation helpers for group membership"
       },
       {
-        "id": "30",
+        "id": "4",
+        "content": "Add system group management functions"
+      },
+      {
+        "id": "5",
+        "content": "Create organization group management functions"
+      },
+      {
+        "id": "6",
+        "content": "Build groups management UI following existing patterns"
+      },
+      {
+        "id": "7",
         "content": "Update notification test UI to use new groups"
       },
       {
-        "id": "17",
+        "id": "8",
+        "content": "Run lint and typecheck after each implementation"
+      },
+      {
+        "id": "9",
+        "content": "Test group creation and membership flow"
+      },
+      {
+        "id": "10",
         "content": "Build notification bell component with badge counter"
       },
       {
-        "id": "18",
+        "id": "11",
         "content": "Create notification dropdown/panel UI"
       },
       {
-        "id": "19",
+        "id": "12",
         "content": "Implement real-time notification subscriptions"
       },
       {
-        "id": "20",
-        "content": "Add browser push notifications support"
-      },
-      {
-        "id": "21",
-        "content": "Integrate email notification service"
-      },
-      {
-        "id": "22",
-        "content": "Test notification system end-to-end"
+        "id": "13",
+        "content": "Document all changes in ACTIVE_SESSION.md"
       }
     ],
     "completed": [
       {
         "id": "1",
-        "content": "Design hybrid appearance settings strategy"
-      },
-      {
-        "id": "2",
-        "content": "Extend database schema - add font to preferences, add lastSync timestamp"
-      },
-      {
-        "id": "3",
-        "content": "Create getAppearanceSettings query in Convex"
-      },
-      {
-        "id": "4",
-        "content": "Create updateAppearanceSettings mutation with optimistic updates"
-      },
-      {
-        "id": "5",
-        "content": "Build useAppearanceSync hook for read logic (localStorage → database fallback)"
-      },
-      {
-        "id": "6",
-        "content": "Implement write-through cache pattern (localStorage + database sync)"
-      },
-      {
-        "id": "7",
-        "content": "Add conflict resolution logic (handle localStorage vs database differences)"
-      },
-      {
-        "id": "8",
-        "content": "Update AppearanceForm to use new sync system"
-      },
-      {
-        "id": "9",
-        "content": "Add sync status indicator UI"
-      },
-      {
-        "id": "10",
-        "content": "Test cross-device sync and edge cases"
-      },
-      {
-        "id": "11",
-        "content": "Research existing notification UI features in the codebase"
-      },
-      {
-        "id": "12",
-        "content": "Design comprehensive notification system architecture"
-      },
-      {
-        "id": "13",
-        "content": "Create notification system implementation document"
-      },
-      {
-        "id": "14",
-        "content": "Create notification preferences backend (Convex functions)"
-      },
-      {
-        "id": "15",
-        "content": "Implement notification creation and delivery system"
-      },
-      {
-        "id": "16",
-        "content": "Create notification testing page with workflow templates"
-      },
-      {
-        "id": "23",
-        "content": "Create group/organization notification targeting functions"
-      },
-      {
-        "id": "24",
-        "content": "Add UI for testing group notifications"
-      },
-      {
-        "id": "25",
-        "content": "Design flexible group system architecture"
-      },
-      {
-        "id": "26",
-        "content": "Add groups and groupMembers tables to schema"
-      },
-      {
-        "id": "27",
-        "content": "Create group management functions (CRUD)"
-      },
-      {
-        "id": "28",
-        "content": "Update notification targeting to use new group system"
+        "content": "Update SCHEMA_DOCUMENTATION.md with simplified architecture"
       }
     ]
   },
-  "last_update": "2025-08-09T22:19:46Z"
+  "last_update": "2025-08-09T23:22:15Z"
 }

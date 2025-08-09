@@ -1,38 +1,231 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+// ==========================================
+// QUERIES
+// ==========================================
+
 /**
- * Create a new group
+ * Get all groups accessible to the current user
+ * Returns both organization groups (from user's orgs) and public system groups
  */
-export const createGroup = mutation({
+export const getUserGroups = query({
+  args: {
+    includeSystemGroups: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) {
+      return [];
+    }
+
+    const groups = [];
+
+    // 1. Get organization groups (user must be org member)
+    if (user.organizationId) {
+      // Check if user is an org member
+      const membership = await ctx.db
+        .query("memberships")
+        .withIndex("by_user_org", (q) => 
+          q.eq("userId", user._id).eq("organizationId", user.organizationId!)
+        )
+        .first();
+
+      if (membership) {
+        // Get all groups for this organization
+        const orgGroups = await ctx.db
+          .query("groups")
+          .withIndex("by_organization", (q) => q.eq("organizationId", user.organizationId!))
+          .filter((q) => q.eq(q.field("isActive"), true))
+          .collect();
+
+        // Add membership info for each group
+        for (const group of orgGroups) {
+          const membership = await ctx.db
+            .query("groupMembers")
+            .withIndex("by_group_user", (q) => 
+              q.eq("groupId", group._id).eq("userId", user._id)
+            )
+            .first();
+
+          groups.push({
+            ...group,
+            isMember: !!membership,
+            memberRole: membership?.role,
+            memberStatus: membership?.status,
+          });
+        }
+      }
+    }
+
+    // 2. Get system groups (platform-wide)
+    if (args.includeSystemGroups) {
+      const systemGroups = await ctx.db
+        .query("groups")
+        .filter((q) => 
+          q.and(
+            q.eq(q.field("organizationId"), undefined),
+            q.eq(q.field("isActive"), true)
+          )
+        )
+        .collect();
+
+      // Add membership info for system groups
+      for (const group of systemGroups) {
+        const membership = await ctx.db
+          .query("groupMembers")
+          .withIndex("by_group_user", (q) => 
+            q.eq("groupId", group._id).eq("userId", user._id)
+          )
+          .first();
+
+        groups.push({
+          ...group,
+          isMember: !!membership,
+          memberRole: membership?.role,
+          memberStatus: membership?.status,
+          isSystemGroup: true,
+        });
+      }
+    }
+
+    return groups;
+  },
+});
+
+/**
+ * Get a single group with members
+ */
+export const getGroup = query({
+  args: {
+    groupId: v.id("groups"),
+  },
+  handler: async (ctx, args) => {
+    const group = await ctx.db.get(args.groupId);
+    if (!group || !group.isActive) {
+      return null;
+    }
+
+    // Get active members
+    const members = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group_status", (q) => 
+        q.eq("groupId", args.groupId).eq("status", "active")
+      )
+      .collect();
+
+    // Get member details
+    const memberDetails = await Promise.all(
+      members.map(async (member) => {
+        const user = await ctx.db.get(member.userId);
+        if (!user) return null;
+        
+        return {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+          role: member.role,
+          joinedAt: member.joinedAt,
+        };
+      })
+    );
+
+    return {
+      ...group,
+      members: memberDetails.filter(Boolean),
+      memberCount: memberDetails.filter(Boolean).length,
+    };
+  },
+});
+
+/**
+ * Get system groups (superadmin only)
+ */
+export const getSystemGroups = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user || user.role !== "superadmin") {
+      return [];
+    }
+
+    // Get all system groups (no organizationId)
+    const systemGroups = await ctx.db
+      .query("groups")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("organizationId"), undefined),
+          q.eq(q.field("isActive"), true)
+        )
+      )
+      .collect();
+
+    // Add member counts
+    const groupsWithCounts = await Promise.all(
+      systemGroups.map(async (group) => {
+        const memberCount = await ctx.db
+          .query("groupMembers")
+          .withIndex("by_group_status", (q) => 
+            q.eq("groupId", group._id).eq("status", "active")
+          )
+          .collect();
+
+        return {
+          ...group,
+          memberCount: memberCount.length,
+        };
+      })
+    );
+
+    return groupsWithCounts;
+  },
+});
+
+// ==========================================
+// MUTATIONS - ORGANIZATION GROUPS
+// ==========================================
+
+/**
+ * Create an organization group
+ * Requires user to be org admin/owner
+ */
+export const createOrgGroup = mutation({
   args: {
     name: v.string(),
+    slug: v.string(),
     description: v.optional(v.string()),
     type: v.union(
-      v.literal("standalone"),
       v.literal("organization"),
       v.literal("department"),
       v.literal("project"),
       v.literal("custom")
     ),
-    organizationId: v.optional(v.id("organizations")),
-    parentGroupId: v.optional(v.id("groups")),
     visibility: v.union(
       v.literal("public"),
-      v.literal("private"),
-      v.literal("organization")
+      v.literal("private")
     ),
     icon: v.optional(v.string()),
     color: v.optional(v.string()),
-    settings: v.optional(v.object({
-      allowMemberInvites: v.optional(v.boolean()),
-      requireApproval: v.optional(v.boolean()),
-      autoAddNewOrgMembers: v.optional(v.boolean()),
-      notificationDefaults: v.optional(v.object({
-        enabled: v.boolean(),
-        types: v.optional(v.array(v.string())),
-      })),
-    })),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -45,53 +238,51 @@ export const createGroup = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    if (!user) {
-      throw new Error("User not found");
+    if (!user || !user.organizationId) {
+      throw new Error("User must belong to an organization");
     }
 
-    // Generate slug from name
-    const slug = args.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    // Check if user is org admin or owner
+    const membership = await ctx.db
+      .query("memberships")
+      .withIndex("by_user_org", (q) => 
+        q.eq("userId", user._id).eq("organizationId", user.organizationId!)
+      )
+      .first();
 
-    // Check if slug already exists
+    if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
+      throw new Error("Only organization admins can create groups");
+    }
+
+    // Check if slug is unique within organization
     const existingGroup = await ctx.db
       .query("groups")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .filter((q) => q.eq(q.field("organizationId"), user.organizationId))
       .first();
 
     if (existingGroup) {
-      throw new Error("A group with this name already exists");
-    }
-
-    // If organization group, verify user has permission
-    if (args.organizationId) {
-      const membership = await ctx.db
-        .query("memberships")
-        .withIndex("by_user_org", (q) => 
-          q.eq("userId", user._id).eq("organizationId", args.organizationId!)
-        )
-        .first();
-
-      if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
-        throw new Error("You don't have permission to create groups in this organization");
-      }
+      throw new Error("A group with this slug already exists in your organization");
     }
 
     // Create the group
     const groupId = await ctx.db.insert("groups", {
       name: args.name,
-      slug,
+      slug: args.slug,
       description: args.description,
       type: args.type,
-      organizationId: args.organizationId,
-      parentGroupId: args.parentGroupId,
+      organizationId: user.organizationId,
       visibility: args.visibility,
       icon: args.icon,
       color: args.color,
       ownerId: user._id,
-      settings: args.settings || {},
+      settings: {
+        allowMemberInvites: true,
+        requireApproval: false,
+        notificationDefaults: {
+          enabled: true,
+        },
+      },
       isActive: true,
       memberCount: 1,
       createdAt: Date.now(),
@@ -107,21 +298,44 @@ export const createGroup = mutation({
       status: "active",
     });
 
-    return { groupId, slug };
+    return { success: true, groupId };
   },
 });
 
+// ==========================================
+// MUTATIONS - SYSTEM GROUPS
+// ==========================================
+
 /**
- * Get all groups for the current user
+ * Create a system group (superadmin only)
+ * These are platform-wide groups not tied to any organization
  */
-export const getUserGroups = query({
+export const createSystemGroup = mutation({
   args: {
-    includePublic: v.optional(v.boolean()),
+    name: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+    type: v.union(
+      v.literal("system"),
+      v.literal("announcement"),
+      v.literal("community")
+    ),
+    visibility: v.union(
+      v.literal("public"),
+      v.literal("private")
+    ),
+    autoAddUsers: v.optional(v.boolean()), // Auto-add all users
+    roleRequirement: v.optional(v.union(
+      v.literal("superadmin"),
+      v.literal("admin"),
+      v.literal("manager"),
+      v.literal("user")
+    )),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      return [];
+      throw new Error("Unauthorized");
     }
 
     const user = await ctx.db
@@ -129,145 +343,122 @@ export const getUserGroups = query({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    if (!user) {
-      return [];
+    if (!user || user.role !== "superadmin") {
+      throw new Error("Only superadmins can create system groups");
     }
 
-    // Get user's group memberships
-    const memberships = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_user_status", (q) => 
-        q.eq("userId", user._id).eq("status", "active")
-      )
-      .collect();
+    // Check if slug is unique
+    const existingGroup = await ctx.db
+      .query("groups")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
 
-    // Get group details
-    const userGroups = await Promise.all(
-      memberships.map(async (membership) => {
-        const group = await ctx.db.get(membership.groupId);
-        if (!group || !group.isActive) return null;
-        
-        return {
-          ...group,
-          memberRole: membership.role,
-          joinedAt: membership.joinedAt,
-        };
-      })
-    );
-
-    let groups = userGroups.filter(Boolean) as NonNullable<typeof userGroups[0]>[];
-
-    // Include public groups if requested
-    if (args.includePublic) {
-      const publicGroups = await ctx.db
-        .query("groups")
-        .withIndex("by_visibility", (q) => q.eq("visibility", "public"))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .collect();
-
-      // Filter out groups user is already a member of
-      const memberGroupIds = new Set(groups.map(g => g._id));
-      const nonMemberPublicGroups = publicGroups.filter(g => !memberGroupIds.has(g._id));
-
-      groups = [...groups, ...nonMemberPublicGroups] as any;
+    if (existingGroup) {
+      throw new Error("A group with this slug already exists");
     }
 
-    // Sort by type and name
-    return groups.sort((a, b) => {
-      if (!a || !b) return 0;
-      if (a.type !== b.type) {
-        const typeOrder = ["organization", "department", "project", "custom", "standalone"];
-        return typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type);
-      }
-      return a.name.localeCompare(b.name);
+    // Create the system group (no organizationId)
+    const groupId = await ctx.db.insert("groups", {
+      name: args.name,
+      slug: args.slug,
+      description: args.description,
+      type: args.type,
+      organizationId: undefined, // System groups have no organization
+      visibility: args.visibility,
+      ownerId: user._id,
+      settings: {
+        allowMemberInvites: false, // System groups are managed by admins
+        requireApproval: true,
+        notificationDefaults: {
+          enabled: true,
+        },
+      },
+      metadata: {
+        isSystemGroup: true,
+        autoAddUsers: args.autoAddUsers,
+        roleRequirement: args.roleRequirement,
+      },
+      isActive: true,
+      memberCount: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
+
+    // Add creator as owner
+    await ctx.db.insert("groupMembers", {
+      groupId,
+      userId: user._id,
+      role: "owner",
+      joinedAt: Date.now(),
+      status: "active",
+    });
+
+    // If autoAddUsers is true, add all users
+    if (args.autoAddUsers) {
+      let usersQuery = ctx.db.query("users");
+      
+      // Filter by role requirement if specified
+      if (args.roleRequirement) {
+        // For role-based groups, only add users with the required role or higher
+        const roleHierarchy = ["user", "manager", "admin", "superadmin"];
+        const requiredIndex = roleHierarchy.indexOf(args.roleRequirement);
+        const eligibleRoles = roleHierarchy.slice(requiredIndex);
+        
+        const allUsers = await usersQuery.collect();
+        const eligibleUsers = allUsers.filter(u => 
+          eligibleRoles.includes(u.role) && u._id !== user._id
+        );
+
+        // Add eligible users to the group
+        await Promise.all(
+          eligibleUsers.map(u =>
+            ctx.db.insert("groupMembers", {
+              groupId,
+              userId: u._id,
+              role: "member",
+              joinedAt: Date.now(),
+              status: "active",
+            })
+          )
+        );
+
+        await ctx.db.patch(groupId, {
+          memberCount: eligibleUsers.length + 1, // +1 for owner
+        });
+      } else {
+        // Add all users
+        const allUsers = await usersQuery.collect();
+        const otherUsers = allUsers.filter(u => u._id !== user._id);
+
+        await Promise.all(
+          otherUsers.map(u =>
+            ctx.db.insert("groupMembers", {
+              groupId,
+              userId: u._id,
+              role: "member",
+              joinedAt: Date.now(),
+              status: "active",
+            })
+          )
+        );
+
+        await ctx.db.patch(groupId, {
+          memberCount: allUsers.length,
+        });
+      }
+    }
+
+    return { success: true, groupId };
   },
 });
 
-/**
- * Get a single group by ID
- */
-export const getGroup = query({
-  args: {
-    groupId: v.id("groups"),
-  },
-  handler: async (ctx, args) => {
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      return null;
-    }
-
-    // Get member count
-    const members = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_status", (q) => 
-        q.eq("groupId", args.groupId).eq("status", "active")
-      )
-      .collect();
-
-    return {
-      ...group,
-      memberCount: members.length,
-    };
-  },
-});
-
-/**
- * Get group members
- */
-export const getGroupMembers = query({
-  args: {
-    groupId: v.id("groups"),
-    status: v.optional(v.union(
-      v.literal("active"),
-      v.literal("pending"),
-      v.literal("suspended")
-    )),
-  },
-  handler: async (ctx, args) => {
-    // Get group to check it exists
-    const group = await ctx.db.get(args.groupId);
-    if (!group) {
-      throw new Error("Group not found");
-    }
-
-    // Get members
-    let membersQuery = ctx.db
-      .query("groupMembers")
-      .withIndex("by_group", (q) => q.eq("groupId", args.groupId));
-
-    if (args.status) {
-      membersQuery = membersQuery.filter((q) => q.eq(q.field("status"), args.status));
-    }
-
-    const members = await membersQuery.collect();
-
-    // Get user details
-    const membersWithDetails = await Promise.all(
-      members.map(async (member) => {
-        const user = await ctx.db.get(member.userId);
-        if (!user) return null;
-
-        return {
-          ...member,
-          user: {
-            _id: user._id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            avatar: user.avatar,
-            username: user.username,
-          },
-        };
-      })
-    );
-
-    return membersWithDetails.filter(Boolean);
-  },
-});
+// ==========================================
+// MUTATIONS - GROUP MEMBERSHIP
+// ==========================================
 
 /**
  * Join a group
+ * Validates based on group type (org vs system)
  */
 export const joinGroup = mutation({
   args: {
@@ -301,53 +492,63 @@ export const joinGroup = mutation({
       )
       .first();
 
-    if (existingMembership) {
-      if (existingMembership.status === "active") {
-        throw new Error("Already a member of this group");
-      } else if (existingMembership.status === "pending") {
-        throw new Error("Membership request already pending");
-      }
+    if (existingMembership && existingMembership.status === "active") {
+      throw new Error("You are already a member of this group");
     }
 
-    // Check visibility and permissions
-    if (group.visibility === "private") {
-      throw new Error("This is a private group. You need an invitation to join.");
-    }
-
-    if (group.visibility === "organization" && group.organizationId) {
-      const membership = await ctx.db
+    // Validate based on group type
+    if (group.organizationId) {
+      // Organization group - check org membership
+      const orgMembership = await ctx.db
         .query("memberships")
         .withIndex("by_user_org", (q) => 
           q.eq("userId", user._id).eq("organizationId", group.organizationId!)
         )
         .first();
 
-      if (!membership) {
+      if (!orgMembership) {
         throw new Error("You must be a member of the organization to join this group");
+      }
+    } else {
+      // System group - check role requirement
+      const metadata = group.metadata as any;
+      if (metadata?.roleRequirement) {
+        const roleHierarchy = ["user", "manager", "admin", "superadmin"];
+        const userRoleIndex = roleHierarchy.indexOf(user.role);
+        const requiredRoleIndex = roleHierarchy.indexOf(metadata.roleRequirement);
+
+        if (userRoleIndex < requiredRoleIndex) {
+          throw new Error(`This group requires ${metadata.roleRequirement} role or higher`);
+        }
       }
     }
 
-    // Determine initial status
-    const status = group.settings?.requireApproval ? "pending" : "active";
-
-    // Add member
-    await ctx.db.insert("groupMembers", {
-      groupId: args.groupId,
-      userId: user._id,
-      role: "member",
-      joinedAt: Date.now(),
-      status,
-    });
-
-    // Update member count if active
-    if (status === "active") {
-      await ctx.db.patch(args.groupId, {
-        memberCount: (group.memberCount || 0) + 1,
-        updatedAt: Date.now(),
+    // Add or reactivate membership
+    if (existingMembership) {
+      await ctx.db.patch(existingMembership._id, {
+        status: "active",
+        joinedAt: Date.now(),
       });
+    } else {
+      const status = group.settings?.requireApproval ? "pending" : "active";
+      
+      await ctx.db.insert("groupMembers", {
+        groupId: args.groupId,
+        userId: user._id,
+        role: "member",
+        joinedAt: Date.now(),
+        status,
+      });
+
+      if (status === "active") {
+        await ctx.db.patch(args.groupId, {
+          memberCount: (group.memberCount || 0) + 1,
+          updatedAt: Date.now(),
+        });
+      }
     }
 
-    return { status };
+    return { success: true };
   },
 });
 
@@ -381,7 +582,12 @@ export const leaveGroup = mutation({
       .first();
 
     if (!membership) {
-      throw new Error("Not a member of this group");
+      throw new Error("You are not a member of this group");
+    }
+
+    const group = await ctx.db.get(args.groupId);
+    if (!group) {
+      throw new Error("Group not found");
     }
 
     // Check if user is the only owner
@@ -393,14 +599,33 @@ export const leaveGroup = mutation({
         )
         .filter((q) => 
           q.and(
-            q.eq(q.field("role"), "owner"),
-            q.neq(q.field("userId"), user._id)
+            q.neq(q.field("userId"), user._id),
+            q.eq(q.field("role"), "owner")
           )
         )
         .collect();
 
       if (otherOwners.length === 0) {
-        throw new Error("Cannot leave group as the only owner. Transfer ownership first.");
+        // Check for admins who can be promoted
+        const admins = await ctx.db
+          .query("groupMembers")
+          .withIndex("by_group_status", (q) => 
+            q.eq("groupId", args.groupId).eq("status", "active")
+          )
+          .filter((q) => 
+            q.and(
+              q.neq(q.field("userId"), user._id),
+              q.eq(q.field("role"), "admin")
+            )
+          )
+          .collect();
+
+        if (admins.length === 0) {
+          throw new Error("Cannot leave group as the only owner. Please assign another owner first.");
+        }
+
+        // Promote first admin to owner
+        await ctx.db.patch(admins[0]._id, { role: "owner" });
       }
     }
 
@@ -408,89 +633,10 @@ export const leaveGroup = mutation({
     await ctx.db.delete(membership._id);
 
     // Update member count
-    const group = await ctx.db.get(args.groupId);
-    if (group && membership.status === "active") {
-      await ctx.db.patch(args.groupId, {
-        memberCount: Math.max(0, (group.memberCount || 1) - 1),
-        updatedAt: Date.now(),
-      });
-    }
-
-    return { success: true };
-  },
-});
-
-/**
- * Update group settings (admin/owner only)
- */
-export const updateGroup = mutation({
-  args: {
-    groupId: v.id("groups"),
-    name: v.optional(v.string()),
-    description: v.optional(v.string()),
-    visibility: v.optional(v.union(
-      v.literal("public"),
-      v.literal("private"),
-      v.literal("organization")
-    )),
-    icon: v.optional(v.string()),
-    color: v.optional(v.string()),
-    settings: v.optional(v.object({
-      allowMemberInvites: v.optional(v.boolean()),
-      requireApproval: v.optional(v.boolean()),
-      autoAddNewOrgMembers: v.optional(v.boolean()),
-      notificationDefaults: v.optional(v.object({
-        enabled: v.boolean(),
-        types: v.optional(v.array(v.string())),
-      })),
-    })),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Check user has permission
-    const membership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => 
-        q.eq("groupId", args.groupId).eq("userId", user._id)
-      )
-      .first();
-
-    if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
-      throw new Error("You don't have permission to update this group");
-    }
-
-    const updateData: any = {
+    await ctx.db.patch(args.groupId, {
+      memberCount: Math.max(0, (group.memberCount || 0) - 1),
       updatedAt: Date.now(),
-    };
-
-    if (args.name !== undefined) {
-      updateData.name = args.name;
-      updateData.slug = args.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    }
-
-    if (args.description !== undefined) updateData.description = args.description;
-    if (args.visibility !== undefined) updateData.visibility = args.visibility;
-    if (args.icon !== undefined) updateData.icon = args.icon;
-    if (args.color !== undefined) updateData.color = args.color;
-    if (args.settings !== undefined) updateData.settings = args.settings;
-
-    await ctx.db.patch(args.groupId, updateData);
+    });
 
     return { success: true };
   },
@@ -523,7 +669,7 @@ export const deleteGroup = mutation({
       throw new Error("Group not found");
     }
 
-    // Check user is owner
+    // Check permissions
     const membership = await ctx.db
       .query("groupMembers")
       .withIndex("by_group_user", (q) => 
@@ -531,258 +677,46 @@ export const deleteGroup = mutation({
       )
       .first();
 
-    if (!membership || membership.role !== "owner") {
-      throw new Error("Only group owners can delete groups");
+    const isSystemGroup = !group.organizationId;
+    
+    if (isSystemGroup) {
+      // System groups can only be deleted by superadmins
+      if (user.role !== "superadmin") {
+        throw new Error("Only superadmins can delete system groups");
+      }
+    } else {
+      // Org groups can be deleted by group owner or org admin
+      if (membership?.role !== "owner") {
+        // Check if user is org admin
+        const orgMembership = await ctx.db
+          .query("memberships")
+          .withIndex("by_user_org", (q) => 
+            q.eq("userId", user._id).eq("organizationId", group.organizationId!)
+          )
+          .first();
+
+        if (!orgMembership || (orgMembership.role !== "owner" && orgMembership.role !== "admin")) {
+          throw new Error("Only group owners or organization admins can delete this group");
+        }
+      }
     }
 
-    // Delete all memberships
-    const allMemberships = await ctx.db
+    // Soft delete
+    await ctx.db.patch(args.groupId, {
+      isActive: false,
+      updatedAt: Date.now(),
+    });
+
+    // Remove all memberships
+    const memberships = await ctx.db
       .query("groupMembers")
       .withIndex("by_group", (q) => q.eq("groupId", args.groupId))
       .collect();
 
     await Promise.all(
-      allMemberships.map((m) => ctx.db.delete(m._id))
+      memberships.map((m) => ctx.db.delete(m._id))
     );
-
-    // Delete the group
-    await ctx.db.delete(args.groupId);
 
     return { success: true };
-  },
-});
-
-/**
- * Add a member to a group (admin/owner only)
- */
-export const addGroupMember = mutation({
-  args: {
-    groupId: v.id("groups"),
-    userId: v.id("users"),
-    role: v.optional(v.union(
-      v.literal("admin"),
-      v.literal("moderator"),
-      v.literal("member")
-    )),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!currentUser) {
-      throw new Error("User not found");
-    }
-
-    // Check current user has permission
-    const currentUserMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => 
-        q.eq("groupId", args.groupId).eq("userId", currentUser._id)
-      )
-      .first();
-
-    if (!currentUserMembership || 
-        (currentUserMembership.role !== "owner" && 
-         currentUserMembership.role !== "admin")) {
-      throw new Error("You don't have permission to add members to this group");
-    }
-
-    // Check if user is already a member
-    const existingMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => 
-        q.eq("groupId", args.groupId).eq("userId", args.userId)
-      )
-      .first();
-
-    if (existingMembership) {
-      if (existingMembership.status === "pending") {
-        // Approve pending membership
-        await ctx.db.patch(existingMembership._id, {
-          status: "active",
-          role: args.role || "member",
-        });
-        return { status: "approved" };
-      } else {
-        throw new Error("User is already a member of this group");
-      }
-    }
-
-    // Add new member
-    await ctx.db.insert("groupMembers", {
-      groupId: args.groupId,
-      userId: args.userId,
-      role: args.role || "member",
-      joinedAt: Date.now(),
-      invitedBy: currentUser._id,
-      status: "active",
-    });
-
-    // Update member count
-    const group = await ctx.db.get(args.groupId);
-    if (group) {
-      await ctx.db.patch(args.groupId, {
-        memberCount: (group.memberCount || 0) + 1,
-        updatedAt: Date.now(),
-      });
-    }
-
-    return { status: "added" };
-  },
-});
-
-/**
- * Remove a member from a group (admin/owner only)
- */
-export const removeGroupMember = mutation({
-  args: {
-    groupId: v.id("groups"),
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!currentUser) {
-      throw new Error("User not found");
-    }
-
-    // Check current user has permission
-    const currentUserMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => 
-        q.eq("groupId", args.groupId).eq("userId", currentUser._id)
-      )
-      .first();
-
-    if (!currentUserMembership || 
-        (currentUserMembership.role !== "owner" && 
-         currentUserMembership.role !== "admin")) {
-      throw new Error("You don't have permission to remove members from this group");
-    }
-
-    // Get target membership
-    const targetMembership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => 
-        q.eq("groupId", args.groupId).eq("userId", args.userId)
-      )
-      .first();
-
-    if (!targetMembership) {
-      throw new Error("User is not a member of this group");
-    }
-
-    // Cannot remove owner unless you are also an owner
-    if (targetMembership.role === "owner" && currentUserMembership.role !== "owner") {
-      throw new Error("Only owners can remove other owners");
-    }
-
-    // Delete membership
-    await ctx.db.delete(targetMembership._id);
-
-    // Update member count
-    const group = await ctx.db.get(args.groupId);
-    if (group && targetMembership.status === "active") {
-      await ctx.db.patch(args.groupId, {
-        memberCount: Math.max(0, (group.memberCount || 1) - 1),
-        updatedAt: Date.now(),
-      });
-    }
-
-    return { success: true };
-  },
-});
-
-/**
- * Search for groups
- */
-export const searchGroups = query({
-  args: {
-    query: v.string(),
-    type: v.optional(v.union(
-      v.literal("standalone"),
-      v.literal("organization"),
-      v.literal("department"),
-      v.literal("project"),
-      v.literal("custom")
-    )),
-    organizationId: v.optional(v.id("organizations")),
-  },
-  handler: async (ctx, args) => {
-    let groupsQuery = ctx.db
-      .query("groups")
-      .withIndex("by_active", (q) => q.eq("isActive", true));
-
-    // Filter by type if specified
-    if (args.type) {
-      groupsQuery = groupsQuery.filter((q) => q.eq(q.field("type"), args.type));
-    }
-
-    // Filter by organization if specified
-    if (args.organizationId) {
-      groupsQuery = groupsQuery.filter((q) => 
-        q.eq(q.field("organizationId"), args.organizationId)
-      );
-    }
-
-    const groups = await groupsQuery.collect();
-
-    // Filter by search query
-    const searchLower = args.query.toLowerCase();
-    const filteredGroups = groups.filter(group => 
-      group.name.toLowerCase().includes(searchLower) ||
-      (group.description && group.description.toLowerCase().includes(searchLower))
-    );
-
-    // Only return public groups or groups user is member of
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      // Not logged in - only return public groups
-      return filteredGroups.filter(g => g.visibility === "public");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!user) {
-      return filteredGroups.filter(g => g.visibility === "public");
-    }
-
-    // Get user's memberships
-    const userMemberships = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_user_status", (q) => 
-        q.eq("userId", user._id).eq("status", "active")
-      )
-      .collect();
-
-    const userGroupIds = new Set(userMemberships.map(m => m.groupId));
-
-    // Return groups user has access to
-    return filteredGroups.filter(group => 
-      group.visibility === "public" ||
-      userGroupIds.has(group._id) ||
-      (group.visibility === "organization" && group.organizationId && 
-       // Check if user is in the same organization
-       // This would need additional logic to check organization membership
-       true)
-    );
   },
 });
