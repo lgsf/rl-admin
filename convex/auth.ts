@@ -287,6 +287,8 @@ export const getUserProfile = query({
       urls: user.urls || [],
       avatar: user.avatar,
       phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth,
+      preferences: user.preferences,
       lastUsernameChange: user.lastUsernameChange,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -352,6 +354,7 @@ export const updateProfile = mutation({
     }))),
     phoneNumber: v.optional(v.string()),
     avatar: v.optional(v.string()),
+    dateOfBirth: v.optional(v.number()),
     preferences: v.optional(v.object({
       theme: v.optional(v.string()),
       language: v.optional(v.string()),

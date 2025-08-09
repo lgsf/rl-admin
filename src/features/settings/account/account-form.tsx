@@ -1,9 +1,12 @@
 import { z } from 'zod'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
-import { showSubmittedData } from '@/utils/show-submitted-data'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Command,
@@ -29,6 +32,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { DatePicker } from '@/components/date-picker'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const languages = [
   { label: 'English', value: 'en' },
@@ -48,25 +52,78 @@ const accountFormSchema = z.object({
     .min(1, 'Please enter your name.')
     .min(2, 'Name must be at least 2 characters.')
     .max(30, 'Name must not be longer than 30 characters.'),
-  dob: z.date('Please select your date of birth.'),
-  language: z.string('Please select a language.'),
+  dob: z.date().optional(),
+  language: z.string().optional(),
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
-// This can come from your database or API.
-const defaultValues: Partial<AccountFormValues> = {
-  name: '',
-}
-
 export function AccountForm() {
+  const userProfile = useQuery(api.auth.getUserProfile)
+  const updateProfile = useMutation(api.auth.updateProfile)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
-    defaultValues,
+    defaultValues: {
+      name: '',
+      language: 'en',
+    },
   })
 
-  function onSubmit(data: AccountFormValues) {
-    showSubmittedData(data)
+  // Load user data when it's available
+  useEffect(() => {
+    if (userProfile) {
+      form.reset({
+        name: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.username || '',
+        // Parse date if stored as timestamp
+        dob: userProfile.dateOfBirth ? new Date(userProfile.dateOfBirth) : undefined,
+        language: userProfile.preferences?.language || 'en',
+      })
+    }
+  }, [userProfile, form])
+
+  async function onSubmit(data: AccountFormValues) {
+    try {
+      setIsSubmitting(true)
+      
+      // Split name into first and last
+      const nameParts = data.name.trim().split(' ')
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      await updateProfile({
+        firstName,
+        lastName,
+        dateOfBirth: data.dob?.getTime(),
+        preferences: {
+          language: data.language,
+        },
+      })
+
+      toast.success('Account settings updated successfully!')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update account settings')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Loading state
+  if (userProfile === undefined) {
+    return (
+      <div className='space-y-8'>
+        <div>
+          <Skeleton className='h-10 w-full' />
+          <Skeleton className='mt-2 h-4 w-3/4' />
+        </div>
+        <div>
+          <Skeleton className='h-10 w-full' />
+          <Skeleton className='mt-2 h-4 w-3/4' />
+        </div>
+        <Skeleton className='h-10 w-32' />
+      </div>
+    )
   }
 
   return (
@@ -132,9 +189,9 @@ export function AccountForm() {
                 <PopoverContent className='w-[200px] p-0'>
                   <Command>
                     <CommandInput placeholder='Search language...' />
-                    <CommandEmpty>No language found.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandList>
+                    <CommandList>
+                      <CommandEmpty>No language found.</CommandEmpty>
+                      <CommandGroup>
                         {languages.map((language) => (
                           <CommandItem
                             value={language.label}
@@ -154,8 +211,8 @@ export function AccountForm() {
                             {language.label}
                           </CommandItem>
                         ))}
-                      </CommandList>
-                    </CommandGroup>
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
@@ -166,7 +223,9 @@ export function AccountForm() {
             </FormItem>
           )}
         />
-        <Button type='submit'>Update account</Button>
+        <Button type='submit' disabled={isSubmitting}>
+          {isSubmitting ? 'Updating...' : 'Update account'}
+        </Button>
       </form>
     </Form>
   )

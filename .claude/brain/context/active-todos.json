@@ -1,18 +1,17 @@
 {
   "todos": {
-    "in_progress": [
+    "in_progress": [],
+    "pending": [],
+    "completed": [
       {
         "id": "1",
         "content": "Commit profile sync and username validation fixes"
-      }
-    ],
-    "pending": [
+      },
       {
         "id": "2",
-        "content": "Fix the next screen/feature"
+        "content": "Fix account form - connect to Convex for persistence"
       }
-    ],
-    "completed": []
+    ]
   },
-  "last_update": "2025-08-09T19:43:07Z"
+  "last_update": "2025-08-09T20:40:45Z"
 }

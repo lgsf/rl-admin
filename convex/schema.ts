@@ -31,6 +31,7 @@ export default defineSchema({
       v.literal("suspended")
     ),
     organizationId: v.optional(v.id("organizations")),
+    dateOfBirth: v.optional(v.number()),
     preferences: v.optional(v.object({
       theme: v.optional(v.string()),
       language: v.optional(v.string()),
