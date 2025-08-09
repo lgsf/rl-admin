@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
@@ -35,7 +35,7 @@ const profileFormSchema = z.object({
     .string()
     .min(2, 'Username must be at least 2 characters.')
     .max(30, 'Username must not be longer than 30 characters.')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens.'),
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, dots, underscores, and hyphens.'),
   email: z.string().email('Please enter a valid email address.'),
   bio: z.string().max(160, 'Bio must not be longer than 160 characters.').optional(),
   urls: z
@@ -51,7 +51,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export default function ProfileForm() {
   const userProfile = useQuery(api.auth.getUserProfile)
-  const updateProfile = useMutation(api.auth.updateProfile)
+  const { updateProfile } = useProfileUpdate() // Use the new hook for Clerk sync
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [checkingUsername, setCheckingUsername] = useState<string | null>(null)
@@ -184,10 +184,14 @@ export default function ProfileForm() {
                     disabled={!canChangeUsername}
                     onChange={(e) => {
                       field.onChange(e)
-                      handleUsernameChange(e.target.value)
+                      // Only check availability if user can change username
+                      if (canChangeUsername) {
+                        handleUsernameChange(e.target.value)
+                      }
                     }}
                   />
-                  {field.value && field.value.length >= 2 && (
+                  {/* Only show availability indicators when username can be changed */}
+                  {canChangeUsername && field.value && field.value.length >= 2 && (
                     <div className='absolute right-2 top-2.5'>
                       {checkingUsername === field.value && usernameCheck === undefined ? (
                         <Loader2 className='h-4 w-4 animate-spin text-muted-foreground' />

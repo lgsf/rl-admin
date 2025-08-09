@@ -120,7 +120,8 @@ export const store = mutation({
     // Use the provided names from Clerk
     const firstName = (given_name as string) || (name as string)?.split(' ')[0] || '';
     const lastName = (family_name as string) || (name as string)?.split(' ').slice(1).join(' ') || '';
-    const username = (nickname as string) || email.split('@')[0];
+    // Use Clerk username if available, otherwise use email prefix (which may contain dots)
+    const username = (nickname as string) || (identity as any).username || email.split('@')[0];
     const avatarUrl = picture as string | undefined;
 
     // Check if user already exists

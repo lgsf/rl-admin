@@ -3,20 +3,16 @@
     "in_progress": [
       {
         "id": "1",
-        "content": "Check if profile updates sync with Clerk"
+        "content": "Commit profile sync and username validation fixes"
       }
     ],
     "pending": [
       {
         "id": "2",
-        "content": "Implement bidirectional sync between Convex and Clerk for user profiles"
-      },
-      {
-        "id": "3",
-        "content": "Test profile update functionality"
+        "content": "Fix the next screen/feature"
       }
     ],
     "completed": []
   },
-  "last_update": "2025-08-09T19:24:52Z"
+  "last_update": "2025-08-09T19:43:07Z"
 }
