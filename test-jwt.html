@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test JWT Token</title>
+</head>
+<body>
+    <h1>Test Clerk JWT Token</h1>
+    <button id="getToken">Get Convex JWT Token</button>
+    <pre id="output"></pre>
+
+    <script>
+        async function testJWT() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Open the app to ensure Clerk is loaded
+                const response = await fetch('http://localhost:5175/');
+                output.textContent = 'Visit http://localhost:5175/ and sign in first, then check the browser console for JWT token details.';
+                
+                // This would need to be done in the actual app context
+                console.log(`
+To test the JWT token:
+1. Open http://localhost:5175/ in your browser
+2. Sign in with Clerk
+3. Open browser console (F12)
+4. Run: 
+   const clerkAuth = window.Clerk;
+   if (clerkAuth && clerkAuth.session) {
+     clerkAuth.session.getToken({ template: 'convex' })
+       .then(token => console.log('Token:', token))
+       .catch(err => console.error('Error:', err));
+   }
+                `);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        document.getElementById('getToken').addEventListener('click', testJWT);
+    </script>
+</body>
+</html>

@@ -1,8 +1,31 @@
 {
   "todos": {
-    "in_progress": [],
-    "pending": [],
-    "completed": []
+    "in_progress": [
+      {
+        "id": "2",
+        "content": "Properly implement Convex + Clerk authentication in TanStack Router"
+      }
+    ],
+    "pending": [
+      {
+        "id": "3",
+        "content": "Fix authentication flow with Convex"
+      },
+      {
+        "id": "4",
+        "content": "Ensure protected routes work correctly"
+      },
+      {
+        "id": "5",
+        "content": "Test authentication and data fetching"
+      }
+    ],
+    "completed": [
+      {
+        "id": "1",
+        "content": "Stop using Convex locally and switch to deployed version"
+      }
+    ]
   },
-  "last_update": "2025-08-09T01:44:00Z"
+  "last_update": "2025-08-09T03:17:21Z"
 }

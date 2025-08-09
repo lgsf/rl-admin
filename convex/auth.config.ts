@@ -1,7 +1,7 @@
 export default {
   providers: [
     {
-      domain: "working-platypus-51.clerk.accounts.dev",
+      domain: "allowing-macaque-86.clerk.accounts.dev",
       applicationID: "convex",
     },
   ],

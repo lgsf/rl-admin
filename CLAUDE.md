@@ -213,8 +213,7 @@ npm install
 npm install convex @clerk/clerk-react
 
 # Development
-npx convex dev        # Start Convex backend
-npm run dev          # Start Vite frontend
+npm run dev          # Start Vite frontend (uses production Convex deployment)
 
 # Database
 npx convex dashboard # Open Convex dashboard
@@ -231,10 +230,10 @@ npm run format       # Prettier
 ```env
 # .env.local
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_CONVEX_URL=https://...convex.cloud
+VITE_CONVEX_URL=https://mellow-orca-998.convex.cloud
 
-# Convex dashboard will provide:
-CONVEX_DEPLOYMENT=...
+# Production deployment (always use deployed version)
+CONVEX_DEPLOYMENT=prod:mellow-orca-998
 ```
 
 ## 📚 Key Patterns

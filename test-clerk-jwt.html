@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Clerk JWT Template</title>
+</head>
+<body>
+    <h1>Clerk JWT Template Test</h1>
+    <button id="testBtn">Test JWT Template</button>
+    <pre id="output"></pre>
+
+    <script>
+        // Your Clerk publishable key
+        const clerkPublishableKey = 'pk_test_d29ya2luZy1wbGF0eXB1cy01MS5jbGVyay5hY2NvdW50cy5kZXYk';
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const output = document.getElementById('output');
+            
+            try {
+                // Try to get the JWT template from Clerk
+                const response = await fetch(`https://working-platypus-51.clerk.accounts.dev/v1/jwt_templates/convex`, {
+                    headers: {
+                        'Authorization': `Bearer ${clerkPublishableKey}`
+                    }
+                });
+                
+                const data = await response.json();
+                output.textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    output.style.color = 'green';
+                    output.textContent = 'JWT Template "convex" exists!\n\n' + output.textContent;
+                } else {
+                    output.style.color = 'red';
+                    output.textContent = 'JWT Template "convex" NOT FOUND!\n\n' + output.textContent;
+                }
+            } catch (error) {
+                output.style.color = 'red';
+                output.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
