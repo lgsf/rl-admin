@@ -1,10 +1,43 @@
 {
   "todos": {
-    "in_progress": [],
+    "in_progress": [
+      {
+        "id": "13",
+        "content": "Create notification system implementation document"
+      }
+    ],
     "pending": [
       {
-        "id": "10",
-        "content": "Test cross-device sync and edge cases"
+        "id": "14",
+        "content": "Create notification preferences backend (Convex functions)"
+      },
+      {
+        "id": "15",
+        "content": "Implement notification creation and delivery system"
+      },
+      {
+        "id": "16",
+        "content": "Build notification bell component with badge counter"
+      },
+      {
+        "id": "17",
+        "content": "Create notification dropdown/panel UI"
+      },
+      {
+        "id": "18",
+        "content": "Implement real-time notification subscriptions"
+      },
+      {
+        "id": "19",
+        "content": "Add browser push notifications support"
+      },
+      {
+        "id": "20",
+        "content": "Integrate email notification service"
+      },
+      {
+        "id": "21",
+        "content": "Test notification system end-to-end"
       }
     ],
     "completed": [
@@ -43,8 +76,20 @@
       {
         "id": "9",
         "content": "Add sync status indicator UI"
+      },
+      {
+        "id": "10",
+        "content": "Test cross-device sync and edge cases"
+      },
+      {
+        "id": "11",
+        "content": "Research existing notification UI features in the codebase"
+      },
+      {
+        "id": "12",
+        "content": "Design comprehensive notification system architecture"
       }
     ]
   },
-  "last_update": "2025-08-09T20:59:44Z"
+  "last_update": "2025-08-09T21:24:15Z"
 }
