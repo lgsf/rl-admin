@@ -34,8 +34,10 @@ export default defineSchema({
     dateOfBirth: v.optional(v.number()),
     preferences: v.optional(v.object({
       theme: v.optional(v.string()),
+      font: v.optional(v.string()),
       language: v.optional(v.string()),
       notifications: v.optional(v.boolean()),
+      appearanceLastSync: v.optional(v.number()),
     })),
     lastSeenAt: v.optional(v.number()),
     createdAt: v.number(),

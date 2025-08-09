@@ -1,12 +1,17 @@
 {
   "todos": {
-    "in_progress": [
+    "in_progress": [],
+    "pending": [
+      {
+        "id": "10",
+        "content": "Test cross-device sync and edge cases"
+      }
+    ],
+    "completed": [
       {
         "id": "1",
         "content": "Design hybrid appearance settings strategy"
-      }
-    ],
-    "pending": [
+      },
       {
         "id": "2",
         "content": "Extend database schema - add font to preferences, add lastSync timestamp"
@@ -38,13 +43,8 @@
       {
         "id": "9",
         "content": "Add sync status indicator UI"
-      },
-      {
-        "id": "10",
-        "content": "Test cross-device sync and edge cases"
       }
-    ],
-    "completed": []
+    ]
   },
-  "last_update": "2025-08-09T20:51:27Z"
+  "last_update": "2025-08-09T20:59:44Z"
 }

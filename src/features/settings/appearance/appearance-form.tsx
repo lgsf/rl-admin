@@ -1,12 +1,10 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { ChevronDownIcon } from '@radix-ui/react-icons'
+import { ChevronDownIcon, CheckCircledIcon, UpdateIcon, CrossCircledIcon, ClockIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { fonts } from '@/config/fonts'
 import { cn } from '@/lib/utils'
-import { showSubmittedData } from '@/utils/show-submitted-data'
-import { useFont } from '@/context/font-context'
-import { useTheme } from '@/context/theme-context'
+import { useAppearanceSync } from '@/hooks/use-appearance-sync'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Form,
@@ -18,39 +16,120 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Badge } from '@/components/ui/badge'
+import { useEffect } from 'react'
+import { toast } from 'sonner'
 
 const appearanceFormSchema = z.object({
-  theme: z.enum(['light', 'dark']),
+  theme: z.enum(['light', 'dark', 'system']),
   font: z.enum(fonts),
 })
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
 export function AppearanceForm() {
-  const { font, setFont } = useFont()
-  const { theme, setTheme } = useTheme()
-
-  // This can come from your database or API.
-  const defaultValues: Partial<AppearanceFormValues> = {
-    theme: theme as 'light' | 'dark',
-    font,
-  }
+  const { 
+    theme, 
+    font, 
+    syncStatus, 
+    lastSync, 
+    updateTheme, 
+    updateFont,
+    isLoading 
+  } = useAppearanceSync()
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
-    defaultValues,
+    defaultValues: {
+      theme: (theme || 'system') as 'light' | 'dark' | 'system',
+      font: font || 'inter',
+    },
   })
 
-  function onSubmit(data: AppearanceFormValues) {
-    if (data.font != font) setFont(data.font)
-    if (data.theme != theme) setTheme(data.theme)
+  // Update form when sync data changes
+  useEffect(() => {
+    form.reset({
+      theme: (theme || 'system') as 'light' | 'dark' | 'system',
+      font: font || 'inter',
+    })
+  }, [theme, font, form])
 
-    showSubmittedData(data)
+  async function onSubmit(data: AppearanceFormValues) {
+    try {
+      // Update both theme and font through the sync hook
+      if (data.font !== font) {
+        await updateFont(data.font)
+      }
+      if (data.theme !== theme) {
+        await updateTheme(data.theme)
+      }
+      
+      toast.success('Appearance preferences updated')
+    } catch (error) {
+      toast.error('Failed to update appearance preferences')
+      console.error('Failed to update appearance:', error)
+    }
+  }
+
+  // Sync status indicator component
+  const SyncStatusIndicator = () => {
+    if (isLoading) {
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <UpdateIcon className="h-3 w-3 animate-spin" />
+          Loading
+        </Badge>
+      )
+    }
+
+    switch (syncStatus) {
+      case 'synced':
+        return (
+          <Badge variant="secondary" className="gap-1">
+            <CheckCircledIcon className="h-3 w-3" />
+            Synced
+          </Badge>
+        )
+      case 'syncing':
+        return (
+          <Badge variant="secondary" className="gap-1">
+            <UpdateIcon className="h-3 w-3 animate-spin" />
+            Syncing
+          </Badge>
+        )
+      case 'pending':
+        return (
+          <Badge variant="secondary" className="gap-1">
+            <ClockIcon className="h-3 w-3" />
+            Pending
+          </Badge>
+        )
+      case 'error':
+        return (
+          <Badge variant="destructive" className="gap-1">
+            <CrossCircledIcon className="h-3 w-3" />
+            Sync Error
+          </Badge>
+        )
+      default:
+        return null
+    }
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+        {/* Sync Status Indicator */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium">Sync Status</h3>
+            <p className="text-sm text-muted-foreground">
+              Your appearance settings sync across all devices
+            </p>
+          </div>
+          <SyncStatusIndicator />
+        </div>
+
         <FormField
           control={form.control}
           name='font'
@@ -66,6 +145,7 @@ export function AppearanceForm() {
                       'dark:bg-background dark:hover:bg-background'
                     )}
                     {...field}
+                    disabled={isLoading}
                   >
                     {fonts.map((font) => (
                       <option key={font} value={font}>
@@ -97,6 +177,7 @@ export function AppearanceForm() {
                 onValueChange={field.onChange}
                 defaultValue={field.value}
                 className='grid max-w-md grid-cols-2 gap-8 pt-2'
+                disabled={isLoading}
               >
                 <FormItem>
                   <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
@@ -155,7 +236,16 @@ export function AppearanceForm() {
           )}
         />
 
-        <Button type='submit'>Update preferences</Button>
+        <div className="flex items-center gap-4">
+          <Button type='submit' disabled={isLoading}>
+            Update preferences
+          </Button>
+          {lastSync && (
+            <p className="text-xs text-muted-foreground">
+              Last synced: {new Date(lastSync).toLocaleString()}
+            </p>
+          )}
+        </div>
       </form>
     </Form>
   )
