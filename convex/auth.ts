@@ -2,49 +2,129 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
- * Get or create user from Clerk authentication
- * This is called when a user signs in for the first time
+ * Store user data from Clerk after authentication
+ * This is called automatically when a user signs in
  */
-export const getOrCreateUser = mutation({
-  args: {
-    clerkId: v.string(),
-    email: v.string(),
-    firstName: v.string(),
-    lastName: v.string(),
-    username: v.string(),
-    avatar: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
+export const store = mutation({
+  args: {},
+  handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Unauthorized: No identity found");
     }
 
+    // Extract user info from Clerk JWT token - using the official Convex template claims
+    const { 
+      subject: clerkId, 
+      email, 
+      name, 
+      picture,
+      nickname,
+      given_name,
+      family_name,
+    } = identity as any; // Type assertion needed for custom claims
+    
+    if (!email) {
+      throw new Error("Email is required");
+    }
+
+    // Use the provided names from Clerk
+    const firstName = (given_name as string) || (name as string)?.split(' ')[0] || '';
+    const lastName = (family_name as string) || (name as string)?.split(' ').slice(1).join(' ') || '';
+    const username = (nickname as string) || email.split('@')[0];
+    const avatarUrl = picture as string | undefined;
+
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
       .first();
 
     if (existingUser) {
-      // Update last seen
+      // Update last seen and any changed info
       await ctx.db.patch(existingUser._id, {
+        email,
+        firstName,
+        lastName,
+        avatar: avatarUrl || existingUser.avatar,
         lastSeenAt: Date.now(),
         updatedAt: Date.now(),
       });
       return existingUser._id;
     }
 
-    // Create new user
+    // Create new user first without organization
     const userId = await ctx.db.insert("users", {
-      clerkId: args.clerkId,
-      email: args.email,
-      firstName: args.firstName,
-      lastName: args.lastName,
-      username: args.username,
-      avatar: args.avatar,
+      clerkId,
+      email,
+      firstName,
+      lastName,
+      username,
+      avatar: avatarUrl,
       role: "user", // Default role
       status: "active",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Create a default organization for the user
+    const orgName = `${firstName}'s Organization`;
+    const slug = `${username}-org`.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    
+    // Check if slug exists and make it unique if needed
+    let finalSlug = slug;
+    let counter = 1;
+    while (true) {
+      const existing = await ctx.db
+        .query("organizations")
+        .withIndex("by_slug", (q) => q.eq("slug", finalSlug))
+        .first();
+      
+      if (!existing) break;
+      finalSlug = `${slug}-${counter}`;
+      counter++;
+    }
+
+    // Create the organization
+    const organizationId = await ctx.db.insert("organizations", {
+      name: orgName,
+      slug: finalSlug,
+      ownerId: userId,
+      plan: "free",
+      settings: {
+        allowInvites: true,
+        maxUsers: 100,
+        features: ["tasks", "chat", "dashboard"],
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Update user with organization
+    await ctx.db.patch(userId, {
+      organizationId,
+      updatedAt: Date.now(),
+    });
+
+    // Create organization membership
+    await ctx.db.insert("memberships", {
+      organizationId,
+      userId,
+      role: "owner",
+      joinedAt: Date.now(),
+    });
+
+    // Create initial dashboard metrics for the new organization
+    const today = new Date().toISOString().split('T')[0];
+    await ctx.db.insert("dashboardMetrics", {
+      organizationId,
+      date: today,
+      period: "daily",
+      revenue: 0,
+      subscriptions: 0,
+      sales: 0,
+      activeUsers: 1,
+      newUsers: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -87,6 +167,86 @@ export const getCurrentUser = query({
 });
 
 /**
+ * Get user profile for editing
+ */
+export const getUserProfile = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) {
+      return null;
+    }
+
+    // Return profile data formatted for the form
+    return {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      bio: user.bio || "",
+      urls: user.urls || [],
+      avatar: user.avatar,
+      phoneNumber: user.phoneNumber,
+      lastUsernameChange: user.lastUsernameChange,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  },
+});
+
+/**
+ * Check if username is available
+ */
+export const checkUsernameAvailability = query({
+  args: {
+    username: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { available: false, reason: "Not authenticated" };
+    }
+
+    // Get current user
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!currentUser) {
+      return { available: false, reason: "User not found" };
+    }
+
+    // If it's the user's current username, it's available
+    if (currentUser.username === args.username) {
+      return { available: true };
+    }
+
+    // Check if username is taken
+    const existingUser = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("username"), args.username))
+      .first();
+
+    if (existingUser) {
+      return { available: false, reason: "Username already taken" };
+    }
+
+    return { available: true };
+  },
+});
+
+/**
  * Update user profile
  */
 export const updateProfile = mutation({
@@ -94,6 +254,12 @@ export const updateProfile = mutation({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     username: v.optional(v.string()),
+    email: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    urls: v.optional(v.array(v.object({
+      value: v.string(),
+      label: v.optional(v.string()),
+    }))),
     phoneNumber: v.optional(v.string()),
     avatar: v.optional(v.string()),
     preferences: v.optional(v.object({
@@ -117,13 +283,42 @@ export const updateProfile = mutation({
       throw new Error("User not found");
     }
 
-    const updates = {
+    // Check username change restrictions
+    if (args.username && args.username !== user.username) {
+      // Check if username was changed in the last 30 days
+      if (user.lastUsernameChange) {
+        const daysSinceChange = (Date.now() - user.lastUsernameChange) / (1000 * 60 * 60 * 24);
+        if (daysSinceChange < 30) {
+          throw new Error(`Username can only be changed once every 30 days. ${Math.ceil(30 - daysSinceChange)} days remaining.`);
+        }
+      }
+
+      // Check if new username is available
+      const existingUser = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("username"), args.username))
+        .first();
+
+      if (existingUser) {
+        throw new Error("Username already taken");
+      }
+    }
+
+    const updates: any = {
       ...args,
       updatedAt: Date.now(),
     };
 
+    // Track username change
+    if (args.username && args.username !== user.username) {
+      updates.lastUsernameChange = Date.now();
+    }
+
     await ctx.db.patch(user._id, updates);
-    return user._id;
+    
+    // Return the updated user
+    const updatedUser = await ctx.db.get(user._id);
+    return updatedUser;
   },
 });
 

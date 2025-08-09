@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/utils/show-submitted-data'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
+import { Id } from '../../../../convex/_generated/dataModel'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -41,6 +44,8 @@ type TasksForm = z.infer<typeof formSchema>
 
 export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
   const isUpdate = !!currentRow
+  const createTask = useMutation(api.tasks.create)
+  const updateTask = useMutation(api.tasks.update)
 
   const form = useForm<TasksForm>({
     resolver: zodResolver(formSchema),
@@ -52,11 +57,33 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: Props) {
     },
   })
 
-  const onSubmit = (data: TasksForm) => {
-    // do something with the form data
-    onOpenChange(false)
-    form.reset()
-    showSubmittedData(data)
+  const onSubmit = async (data: TasksForm) => {
+    try {
+      if (isUpdate && currentRow?.id) {
+        await updateTask({
+          id: currentRow.id as Id<"tasks">,
+          title: data.title,
+          status: data.status as any,
+          label: data.label as any,
+          priority: data.priority as any,
+        })
+        toast.success('Task updated successfully')
+      } else {
+        await createTask({
+          title: data.title,
+          description: '',
+          status: data.status as any,
+          label: data.label as any,
+          priority: data.priority as any,
+        })
+        toast.success('Task created successfully')
+      }
+      onOpenChange(false)
+      form.reset()
+    } catch (error) {
+      toast.error(isUpdate ? 'Failed to update task' : 'Failed to create task')
+      console.error(error)
+    }
   }
 
   return (

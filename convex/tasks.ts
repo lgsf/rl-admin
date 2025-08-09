@@ -48,13 +48,14 @@ export const list = query({
     }
 
     // Build query
-    let query = ctx.db.query("tasks");
+    let query = orgId 
+      ? ctx.db.query("tasks").withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId)
+        )
+      : ctx.db.query("tasks");
 
     if (orgId) {
       await requireOrgMembership(ctx, orgId);
-      query = query.withIndex("by_organization", (q) =>
-        q.eq("organizationId", orgId)
-      );
     }
 
     // Apply filters
@@ -310,16 +311,18 @@ export const update = mutation({
     const newAssigneeId = updates.assigneeId;
 
     // Handle status completion
-    if (updates.status === "done" && task.status !== "done") {
-      updates.completedAt = Date.now();
-    } else if (updates.status !== "done" && task.status === "done") {
-      updates.completedAt = undefined;
-    }
-
-    await ctx.db.patch(taskId, {
+    let patchData: any = {
       ...updates,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (updates.status === "done" && task.status !== "done") {
+      patchData.completedAt = Date.now();
+    } else if (updates.status !== "done" && task.status === "done") {
+      patchData.completedAt = undefined;
+    }
+
+    await ctx.db.patch(taskId, patchData);
 
     // Log audit event
     if (user.organizationId) {
@@ -417,13 +420,11 @@ export const getStats = query({
       await requireOrgMembership(ctx, orgId);
     }
 
-    let query = ctx.db.query("tasks");
-
-    if (orgId) {
-      query = query.withIndex("by_organization", (q) =>
-        q.eq("organizationId", orgId)
-      );
-    }
+    let query = orgId
+      ? ctx.db.query("tasks").withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId)
+        )
+      : ctx.db.query("tasks");
 
     if (args.projectId) {
       query = query.filter((q) => q.eq(q.field("projectId"), args.projectId));

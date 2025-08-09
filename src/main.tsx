@@ -7,14 +7,21 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { ConvexReactClient } from "convex/react"
+import { ClerkProvider, useAuth } from "@clerk/clerk-react"
+import { ConvexProviderWithClerk } from "convex/react-clerk"
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { handleServerError } from '@/utils/handle-server-error'
 import { FontProvider } from './context/font-context'
 import { ThemeProvider } from './context/theme-context'
+import { AppProvider } from './components/providers/app-provider'
 import './index.css'
 // Generated Routes
 import { routeTree } from './routeTree.gen'
+
+// Initialize Convex client
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL!)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,13 +95,21 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme='light' storageKey='vite-ui-theme'>
-          <FontProvider>
-            <RouterProvider router={router} />
-          </FontProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+      <ClerkProvider 
+        publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY!}
+      >
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <AppProvider>
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider defaultTheme='light' storageKey='vite-ui-theme'>
+                <FontProvider>
+                  <RouterProvider router={router} />
+                </FontProvider>
+              </ThemeProvider>
+            </QueryClientProvider>
+          </AppProvider>
+        </ConvexProviderWithClerk>
+      </ClerkProvider>
     </StrictMode>
   )
 }

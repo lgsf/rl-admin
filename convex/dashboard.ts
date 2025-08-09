@@ -25,9 +25,9 @@ export const getMetrics = query({
   handler: async (ctx, args) => {
     const user = await getCurrentUserWithOrg(ctx);
 
-    // Check permissions
-    const canViewFull = hasPermission(user.role, "dashboard:read");
-    const canViewLimited = hasPermission(user.role, "dashboard:read:limited");
+    // Check permissions  
+    const canViewFull = hasPermission(user.role as any, "dashboard:read");
+    const canViewLimited = hasPermission(user.role as any, "dashboard:read:limited");
 
     if (!canViewFull && !canViewLimited) {
       throw new Error("Permission denied: Cannot view dashboard");
@@ -90,9 +90,25 @@ export const getMetrics = query({
 
     const metrics = await metricsQuery.collect();
 
-    // If no metrics exist, generate sample data (for demo)
+    // If no metrics exist, return empty data
     if (metrics.length === 0) {
-      return generateSampleMetrics(args.period, startDate, endDate);
+      return {
+        totals: {
+          revenue: 0,
+          subscriptions: 0,
+          sales: 0,
+          activeUsers: 0,
+          newUsers: 0,
+        },
+        growth: {
+          revenue: 0,
+          subscriptions: 0,
+          sales: 0,
+          activeUsers: 0,
+        },
+        chartData: [],
+        metrics: [],
+      };
     }
 
     // Calculate aggregates
@@ -170,68 +186,147 @@ export const getOverview = query({
     organizationId: v.optional(v.id("organizations")),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUserWithOrg(ctx);
-    await requirePermission(ctx, "dashboard:read");
+    try {
+      const user = await getCurrentUserWithOrg(ctx);
+      
+      // Check permission - users have dashboard:read:limited by default
+      const canView = hasPermission(user.role as any, "dashboard:read") || 
+                     hasPermission(user.role as any, "dashboard:read:limited");
+      
+      if (!canView) {
+        throw new Error("Permission denied: Cannot view dashboard");
+      }
 
-    let orgId = args.organizationId || user.organizationId;
-    if (!orgId && user.role !== "superadmin") {
-      throw new Error("No organization context");
-    }
+      let orgId = args.organizationId || user.organizationId;
+      
+      // If no organization, return zeros
+      if (!orgId) {
+        return {
+          totalRevenue: {
+            value: 0,
+            change: 0,
+          },
+          subscriptions: {
+            value: 0,
+            change: 0,
+          },
+          sales: {
+            value: 0,
+            change: 0,
+          },
+          activeNow: {
+            value: 0,
+            change: 0,
+          },
+          recentSales: [],
+          chartData: [],
+        };
+      }
 
-    if (orgId) {
-      await requireOrgMembership(ctx, orgId);
-    }
+      // Verify membership if org specified
+      if (orgId && user.role !== "superadmin") {
+        const membership = await ctx.db
+          .query("memberships")
+          .withIndex("by_user_org", (q) =>
+            q.eq("userId", user._id).eq("organizationId", orgId!)
+          )
+          .first();
+        
+        if (!membership) {
+          throw new Error("Not a member of this organization");
+        }
+      }
 
-    // Get current month metrics
-    const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1)
-      .toISOString().slice(0, 7);
+      // Get current month metrics
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1)
+        .toISOString().slice(0, 7);
 
-    const currentMetrics = await ctx.db
-      .query("dashboardMetrics")
-      .withIndex("by_org_date", (q) => q.eq("organizationId", orgId!))
-      .filter((q) => q.gte(q.field("date"), currentMonth))
-      .collect();
+      const currentMetrics = await ctx.db
+        .query("dashboardMetrics")
+        .withIndex("by_org_date", (q) => q.eq("organizationId", orgId!))
+        .filter((q) => q.gte(q.field("date"), currentMonth))
+        .collect();
 
-    const lastMetrics = await ctx.db
-      .query("dashboardMetrics")
-      .withIndex("by_org_date", (q) => q.eq("organizationId", orgId!))
-      .filter((q) => 
-        q.and(
-          q.gte(q.field("date"), lastMonth),
-          q.lt(q.field("date"), currentMonth)
+      const lastMetrics = await ctx.db
+        .query("dashboardMetrics")
+        .withIndex("by_org_date", (q) => q.eq("organizationId", orgId!))
+        .filter((q) => 
+          q.and(
+            q.gte(q.field("date"), lastMonth),
+            q.lt(q.field("date"), currentMonth)
+          )
         )
-      )
-      .collect();
+        .collect();
 
-    // Calculate totals
-    const currentTotals = calculateTotals(currentMetrics);
-    const lastTotals = calculateTotals(lastMetrics);
+      // If no metrics, return real zeros from current state
+      if (currentMetrics.length === 0) {
+        // Get actual counts from database
+        const userCount = await ctx.db
+          .query("users")
+          .withIndex("by_organization", (q) => q.eq("organizationId", orgId!))
+          .collect();
+        
+        const taskCount = await ctx.db
+          .query("tasks")
+          .withIndex("by_organization", (q) => q.eq("organizationId", orgId!))
+          .collect();
 
-    // Get recent sales (mock data for now)
-    const recentSales = await getRecentSales(ctx, orgId!);
+        return {
+          totalRevenue: {
+            value: 0,
+            change: 0,
+          },
+          subscriptions: {
+            value: 0,
+            change: 0,
+          },
+          sales: {
+            value: taskCount.length, // Use task count as sales for now
+            change: 0,
+          },
+          activeNow: {
+            value: userCount.length,
+            change: 0,
+          },
+          recentSales: [],
+          chartData: [],
+        };
+      }
 
-    return {
-      totalRevenue: {
-        value: currentTotals.revenue,
-        change: calculatePercentageChange(lastTotals.revenue, currentTotals.revenue),
-      },
-      subscriptions: {
-        value: currentTotals.subscriptions,
-        change: calculatePercentageChange(lastTotals.subscriptions, currentTotals.subscriptions),
-      },
-      sales: {
-        value: currentTotals.sales,
-        change: calculatePercentageChange(lastTotals.sales, currentTotals.sales),
-      },
-      activeNow: {
-        value: currentTotals.activeUsers,
-        change: currentTotals.newUsers, // Show new users since last hour
-      },
-      recentSales,
-      chartData: generateChartData(currentMetrics),
-    };
+      // Calculate totals
+      const currentTotals = calculateTotals(currentMetrics);
+      const lastTotals = calculateTotals(lastMetrics);
+
+      // Get recent sales (mock data for now)
+      const recentSales = await getRecentSales(ctx, orgId);
+
+      return {
+        totalRevenue: {
+          value: currentTotals.revenue,
+          change: calculatePercentageChange(lastTotals.revenue, currentTotals.revenue),
+        },
+        subscriptions: {
+          value: currentTotals.subscriptions,
+          change: calculatePercentageChange(lastTotals.subscriptions, currentTotals.subscriptions),
+        },
+        sales: {
+          value: currentTotals.sales,
+          change: calculatePercentageChange(lastTotals.sales, currentTotals.sales),
+        },
+        activeNow: {
+          value: currentTotals.activeUsers,
+          change: currentTotals.newUsers,
+        },
+        recentSales,
+        chartData: generateChartData(currentMetrics),
+      };
+    } catch (error) {
+      // Log error and re-throw it
+      console.error("Dashboard error:", error);
+      throw error;
+    }
   },
 });
 
@@ -353,73 +448,11 @@ function generateChartData(metrics: any[]) {
   });
 }
 
-async function getRecentSales(ctx: any, organizationId: string) {
-  // Mock recent sales data for demo
-  // In a real app, this would fetch actual sales data
-  return [
-    {
-      name: "Olivia Martin",
-      email: "olivia.martin@email.com",
-      amount: 1999.00,
-      avatar: "/avatars/01.png",
-    },
-    {
-      name: "Jackson Lee",
-      email: "jackson.lee@email.com",
-      amount: 39.00,
-      avatar: "/avatars/02.png",
-    },
-    {
-      name: "Isabella Nguyen",
-      email: "isabella.nguyen@email.com",
-      amount: 299.00,
-      avatar: "/avatars/03.png",
-    },
-    {
-      name: "William Kim",
-      email: "will@email.com",
-      amount: 99.00,
-      avatar: "/avatars/04.png",
-    },
-    {
-      name: "Sofia Davis",
-      email: "sofia.davis@email.com",
-      amount: 39.00,
-      avatar: "/avatars/05.png",
-    },
-  ];
+async function getRecentSales(ctx: any, organizationId: string | null) {
+  if (!organizationId) return [];
+  
+  // For now return empty array until we implement sales
+  // This will be populated when we add sales/transactions functionality
+  return [];
 }
 
-function generateSampleMetrics(period: string, startDate: string, endDate: string) {
-  // Generate sample data for demo purposes
-  const data = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  for (let i = 0; i < 12; i++) {
-    data.push({
-      name: months[i],
-      total: Math.floor(Math.random() * 5000) + 1000,
-    });
-  }
-  
-  return {
-    totals: {
-      revenue: 45231.89,
-      subscriptions: 2350,
-      sales: 12234,
-      activeUsers: 573,
-      newUsers: 201,
-    },
-    growth: {
-      revenue: 20.1,
-      subscriptions: 180.1,
-      sales: 19,
-      activeUsers: 201,
-    },
-    chartData: data,
-    metrics: [],
-  };
-}

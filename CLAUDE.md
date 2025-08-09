@@ -324,3 +324,10 @@ export const updatePresence = mutation({
 
 *Last Updated: 2025-08-08*
 *Version: 1.0.0*
+## Claude Brain System
+This project now uses the Claude Brain System for intelligent assistance.
+- Checkpoints: Automatic state preservation
+- Todo tracking: Integrated task management
+- Memory: Self-learning capabilities
+
+See `.claude/00-README.md` for complete documentation.

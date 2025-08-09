@@ -1,0 +1,8 @@
+#!/bin/bash
+# Manual checkpoint command
+# Creates full snapshot: checkpoint + ACTIVE_SESSION.md + state.json
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/../core/state-manager.sh" \
+  --mode=snapshot \
+  --trigger=manual

@@ -1,19 +1,71 @@
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersTable } from './components/users-table'
 import UsersProvider from './context/users-context'
 import { userListSchema } from './data/schema'
-import { users } from './data/users'
+import { users as mockUsers } from './data/users'
 
 export default function Users() {
-  // Parse user list
-  const userList = userListSchema.parse(users)
+  // Fetch users from Convex
+  const convexUsers = useQuery(api.users.list, {})
+  
+  // Loading state
+  if (convexUsers === undefined) {
+    return (
+      <UsersProvider>
+        <Header fixed>
+          <Search />
+          <div className='ml-auto flex items-center space-x-4'>
+            <ThemeSwitch />
+            <ProfileDropdown />
+          </div>
+        </Header>
+        <Main>
+          <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
+            <div>
+              <h2 className='text-2xl font-bold tracking-tight'>User List</h2>
+              <p className='text-muted-foreground'>
+                Loading users...
+              </p>
+            </div>
+          </div>
+          <div className='space-y-4'>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className='h-16 w-full' />
+            ))}
+          </div>
+        </Main>
+      </UsersProvider>
+    )
+  }
+  
+  // Transform Convex users to match the expected schema
+  const transformedUsers = convexUsers?.map(user => ({
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
+    email: user.email,
+    phoneNumber: user.phoneNumber || '',
+    status: user.status,
+    role: user.role,
+    createdAt: new Date(user.createdAt),
+    updatedAt: new Date(user.updatedAt),
+  })) || []
+  
+  // Parse user list with schema or use mock data
+  const userList = transformedUsers.length > 0 
+    ? userListSchema.parse(transformedUsers)
+    : userListSchema.parse(mockUsers)
 
   return (
     <UsersProvider>

@@ -1,4 +1,7 @@
-import { showSubmittedData } from '@/utils/show-submitted-data'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
+import { Id } from '../../../../convex/_generated/dataModel'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useTasks } from '../context/tasks-context'
 import { TasksImportDialog } from './tasks-import-dialog'
@@ -6,6 +9,7 @@ import { TasksMutateDrawer } from './tasks-mutate-drawer'
 
 export function TasksDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useTasks()
+  const deleteTask = useMutation(api.tasks.remove)
   return (
     <>
       <TasksMutateDrawer
@@ -44,15 +48,18 @@ export function TasksDialogs() {
                 setCurrentRow(null)
               }, 500)
             }}
-            handleConfirm={() => {
-              setOpen(null)
-              setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
-              showSubmittedData(
-                currentRow,
-                'The following task has been deleted:'
-              )
+            handleConfirm={async () => {
+              try {
+                await deleteTask({ id: currentRow.id as Id<"tasks"> })
+                toast.success('Task deleted successfully')
+                setOpen(null)
+                setTimeout(() => {
+                  setCurrentRow(null)
+                }, 500)
+              } catch (error) {
+                toast.error('Failed to delete task')
+                console.error(error)
+              }
             }}
             className='max-w-md'
             title={`Delete this task: ${currentRow.id} ?`}

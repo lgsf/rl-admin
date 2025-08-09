@@ -11,6 +11,12 @@ export default defineSchema({
     username: v.string(),
     phoneNumber: v.optional(v.string()),
     avatar: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    urls: v.optional(v.array(v.object({
+      value: v.string(),
+      label: v.optional(v.string()),
+    }))),
+    lastUsernameChange: v.optional(v.number()), // Track username change for 30-day limit
     role: v.union(
       v.literal("superadmin"),
       v.literal("admin"),

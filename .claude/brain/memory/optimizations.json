@@ -1,0 +1,41 @@
+{
+  "performance_optimizations": [
+    {
+      "id": "bundle-size",
+      "category": "performance",
+      "technique": "Code splitting",
+      "impact": "Reduces initial load time",
+      "implementation": "Use React.lazy() and dynamic imports",
+      "applied_count": 0
+    },
+    {
+      "id": "render-optimization",
+      "category": "performance",
+      "technique": "Memoization",
+      "impact": "Prevents unnecessary re-renders",
+      "implementation": "Use React.memo, useMemo, useCallback",
+      "applied_count": 0
+    }
+  ],
+  "code_quality_optimizations": [
+    {
+      "id": "component-composition",
+      "category": "architecture",
+      "technique": "Composition over inheritance",
+      "impact": "More flexible and reusable components",
+      "implementation": "Use custom hooks and HOCs",
+      "applied_count": 0
+    }
+  ],
+  "workflow_optimizations": [
+    {
+      "id": "parallel-testing",
+      "category": "productivity",
+      "technique": "Run tests in parallel",
+      "impact": "Faster feedback loop",
+      "implementation": "Use Vitest parallel mode",
+      "applied_count": 0
+    }
+  ],
+  "learned_shortcuts": []
+}

@@ -9,6 +9,8 @@ export const Route = createFileRoute('/clerk/(auth)/sign-in')({
         emailAddress: 'your_mail+rl_admin@gmail.com',
       }}
       fallback={<Skeleton className='h-[30rem] w-[25rem]' />}
+      signUpUrl="/clerk/sign-up"
+      forceRedirectUrl="/dashboard"
     />
   ),
 })

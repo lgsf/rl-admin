@@ -1,0 +1,16 @@
+{
+  "sessions": [],
+  "metrics": {
+    "average_session_duration": null,
+    "tasks_completed_per_session": 0,
+    "code_quality_score": 0,
+    "common_commands": {},
+    "peak_productivity_hours": [],
+    "error_rate": 0
+  },
+  "trends": {
+    "velocity": [],
+    "quality": [],
+    "learning_curve": []
+  }
+}

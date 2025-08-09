@@ -1,17 +1,39 @@
 import Cookies from 'js-cookie'
 import { Outlet } from '@tanstack/react-router'
+import { useUser } from '@clerk/clerk-react'
+import { Navigate } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Props {
   children?: React.ReactNode
 }
 
 export function AuthenticatedLayout({ children }: Props) {
+  const { isLoaded, isSignedIn } = useUser()
   const defaultOpen = Cookies.get('sidebar_state') !== 'false'
+
+  // Loading state
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+    )
+  }
+
+  // Not signed in - redirect to sign in
+  if (!isSignedIn) {
+    return <Navigate to="/sign-in" />
+  }
+
   return (
     <SearchProvider>
       <SidebarProvider defaultOpen={defaultOpen}>

@@ -34,15 +34,16 @@ export const list = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, "users:read");
     
-    let query = ctx.db.query("users");
-
     // Filter by organization if specified
     if (args.organizationId) {
       await requireOrgMembership(ctx, args.organizationId);
-      query = query.withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId)
-      );
     }
+
+    let query = args.organizationId
+      ? ctx.db.query("users").withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId)
+        )
+      : ctx.db.query("users");
 
     // Filter by status if specified
     if (args.status) {
@@ -375,14 +376,15 @@ export const getStats = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, "users:read");
 
-    let query = ctx.db.query("users");
-
     if (args.organizationId) {
       await requireOrgMembership(ctx, args.organizationId);
-      query = query.withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId)
-      );
     }
+
+    let query = args.organizationId
+      ? ctx.db.query("users").withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId)
+        )
+      : ctx.db.query("users");
 
     const users = await query.collect();
 

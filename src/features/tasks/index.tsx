@@ -1,16 +1,54 @@
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
 import TasksProvider from './context/tasks-context'
-import { tasks } from './data/tasks'
+import { tasks as mockTasks } from './data/tasks'
 
 export default function Tasks() {
+  // Fetch tasks from Convex
+  const convexTasks = useQuery(api.tasks.list, {})
+  
+  // Loading state
+  if (convexTasks === undefined) {
+    return (
+      <TasksProvider>
+        <Header fixed>
+          <Search />
+          <div className='ml-auto flex items-center space-x-4'>
+            <ThemeSwitch />
+            <ProfileDropdown />
+          </div>
+        </Header>
+        <Main>
+          <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
+            <div>
+              <h2 className='text-2xl font-bold tracking-tight'>Tasks</h2>
+              <p className='text-muted-foreground'>
+                Loading tasks...
+              </p>
+            </div>
+          </div>
+          <div className='space-y-4'>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className='h-16 w-full' />
+            ))}
+          </div>
+        </Main>
+      </TasksProvider>
+    )
+  }
+  
+  // Use Convex data if available, otherwise use mock data
+  const tasks = convexTasks || mockTasks
   return (
     <TasksProvider>
       <Header fixed>

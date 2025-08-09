@@ -1,3 +1,5 @@
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -15,8 +17,55 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Dashboard() {
+  // Fetch dashboard data from Convex
+  const dashboardData = useQuery(api.dashboard.getOverview, {})
+  
+  // Loading state
+  if (dashboardData === undefined) {
+    return (
+      <>
+        <Header>
+          <TopNav links={topNav} />
+          <div className='ml-auto flex items-center space-x-4'>
+            <Search />
+            <ThemeSwitch />
+            <ProfileDropdown />
+          </div>
+        </Header>
+        <Main>
+          <div className='mb-2 flex items-center justify-between space-y-2'>
+            <h1 className='text-2xl font-bold tracking-tight'>Dashboard</h1>
+          </div>
+          <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <Skeleton className='h-4 w-24' />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className='h-8 w-32' />
+                  <Skeleton className='mt-1 h-3 w-20' />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </Main>
+      </>
+    )
+  }
+
+  // Use Convex data or fallback to defaults
+  const totalRevenue = dashboardData?.totalRevenue?.value ?? 45231.89
+  const revenueChange = dashboardData?.totalRevenue?.change ?? 20.1
+  const subscriptions = dashboardData?.subscriptions?.value ?? 2350
+  const subscriptionsChange = dashboardData?.subscriptions?.change ?? 180.1
+  const sales = dashboardData?.sales?.value ?? 12234
+  const salesChange = dashboardData?.sales?.change ?? 19
+  const activeNow = dashboardData?.activeNow?.value ?? 573
+  const activeChange = dashboardData?.activeNow?.change ?? 201
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -77,9 +126,9 @@ export default function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>$45,231.89</div>
+                  <div className='text-2xl font-bold'>${totalRevenue.toLocaleString()}</div>
                   <p className='text-muted-foreground text-xs'>
-                    +20.1% from last month
+                    {revenueChange > 0 ? '+' : ''}{revenueChange.toFixed(1)}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -104,9 +153,9 @@ export default function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+2350</div>
+                  <div className='text-2xl font-bold'>+{subscriptions.toLocaleString()}</div>
                   <p className='text-muted-foreground text-xs'>
-                    +180.1% from last month
+                    {subscriptionsChange > 0 ? '+' : ''}{subscriptionsChange.toFixed(1)}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -128,9 +177,9 @@ export default function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+12,234</div>
+                  <div className='text-2xl font-bold'>+{sales.toLocaleString()}</div>
                   <p className='text-muted-foreground text-xs'>
-                    +19% from last month
+                    {salesChange > 0 ? '+' : ''}{salesChange}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -153,9 +202,9 @@ export default function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className='text-2xl font-bold'>+573</div>
+                  <div className='text-2xl font-bold'>+{activeNow}</div>
                   <p className='text-muted-foreground text-xs'>
-                    +201 since last hour
+                    +{activeChange} since last hour
                   </p>
                 </CardContent>
               </Card>
