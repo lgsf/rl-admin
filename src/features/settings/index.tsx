@@ -5,6 +5,7 @@ import {
   IconPalette,
   IconTool,
   IconUser,
+  IconTestPipe,
 } from '@tabler/icons-react'
 import { Separator } from '@/components/ui/separator'
 import { Header } from '@/components/layout/header'
@@ -69,6 +70,11 @@ const sidebarNavItems = [
     title: 'Notifications',
     icon: <IconNotification size={18} />,
     href: '/settings/notifications',
+  },
+  {
+    title: 'Notification Test',
+    icon: <IconTestPipe size={18} />,
+    href: '/settings/notification-test',
   },
   {
     title: 'Display',

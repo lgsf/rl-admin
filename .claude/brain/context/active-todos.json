@@ -3,27 +3,27 @@
     "in_progress": [],
     "pending": [
       {
-        "id": "16",
+        "id": "17",
         "content": "Build notification bell component with badge counter"
       },
       {
-        "id": "17",
+        "id": "18",
         "content": "Create notification dropdown/panel UI"
       },
       {
-        "id": "18",
+        "id": "19",
         "content": "Implement real-time notification subscriptions"
       },
       {
-        "id": "19",
+        "id": "20",
         "content": "Add browser push notifications support"
       },
       {
-        "id": "20",
+        "id": "21",
         "content": "Integrate email notification service"
       },
       {
-        "id": "21",
+        "id": "22",
         "content": "Test notification system end-to-end"
       }
     ],
@@ -87,8 +87,20 @@
       {
         "id": "15",
         "content": "Implement notification creation and delivery system"
+      },
+      {
+        "id": "16",
+        "content": "Create notification testing page with workflow templates"
+      },
+      {
+        "id": "23",
+        "content": "Create group/organization notification targeting functions"
+      },
+      {
+        "id": "24",
+        "content": "Add UI for testing group notifications"
       }
     ]
   },
-  "last_update": "2025-08-09T21:30:18Z"
+  "last_update": "2025-08-09T22:04:45Z"
 }
