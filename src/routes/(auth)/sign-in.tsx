@@ -5,10 +5,9 @@ export const Route = createFileRoute('/(auth)/sign-in')({
   component: () => (
     <div className="flex min-h-screen items-center justify-center">
       <SignIn 
-        routing="path" 
-        path="/sign-in"
+        routing="virtual"
         signUpUrl="/sign-up"
-        afterSignInUrl="/"
+        afterSignInUrl="/dashboard"
         appearance={{
           elements: {
             rootBox: "mx-auto",

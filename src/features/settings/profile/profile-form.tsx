@@ -7,6 +7,7 @@ import { api } from '../../../../convex/_generated/api'
 import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useProfileUpdate } from '@/hooks/use-profile-update'
 import { Button } from '@/components/ui/button'
 import {
   Form,

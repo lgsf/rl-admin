@@ -230,10 +230,10 @@ npm run format       # Prettier
 ```env
 # .env.local
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-VITE_CONVEX_URL=https://mellow-orca-998.convex.cloud
+VITE_CONVEX_URL=https://ceaseless-kiwi-302.convex.cloud
 
-# Production deployment (always use deployed version)
-CONVEX_DEPLOYMENT=prod:mellow-orca-998
+# Development deployment (always use deployed version)
+CONVEX_DEPLOYMENT=dev:ceaseless-kiwi-302
 ```
 
 ## 📚 Key Patterns

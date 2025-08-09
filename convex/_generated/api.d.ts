@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as auth_clerk_sync from "../auth-clerk-sync.js";
 import type * as auth from "../auth.js";
 import type * as dashboard from "../dashboard.js";
 import type * as lib_permissions from "../lib/permissions.js";
@@ -29,6 +30,7 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "auth-clerk-sync": typeof auth_clerk_sync;
   auth: typeof auth;
   dashboard: typeof dashboard;
   "lib/permissions": typeof lib_permissions;
