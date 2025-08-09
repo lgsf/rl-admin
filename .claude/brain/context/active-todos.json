@@ -1,20 +1,7 @@
 {
   "todos": {
-    "in_progress": [
-      {
-        "id": "13",
-        "content": "Create notification system implementation document"
-      }
-    ],
+    "in_progress": [],
     "pending": [
-      {
-        "id": "14",
-        "content": "Create notification preferences backend (Convex functions)"
-      },
-      {
-        "id": "15",
-        "content": "Implement notification creation and delivery system"
-      },
       {
         "id": "16",
         "content": "Build notification bell component with badge counter"
@@ -88,8 +75,20 @@
       {
         "id": "12",
         "content": "Design comprehensive notification system architecture"
+      },
+      {
+        "id": "13",
+        "content": "Create notification system implementation document"
+      },
+      {
+        "id": "14",
+        "content": "Create notification preferences backend (Convex functions)"
+      },
+      {
+        "id": "15",
+        "content": "Implement notification creation and delivery system"
       }
     ]
   },
-  "last_update": "2025-08-09T21:24:15Z"
+  "last_update": "2025-08-09T21:30:18Z"
 }

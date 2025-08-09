@@ -2,7 +2,8 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
-import { showSubmittedData } from '@/utils/show-submitted-data'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -16,6 +17,9 @@ import {
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
+import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
+import { useEffect } from 'react'
 
 const notificationsFormSchema = z.object({
   type: z.enum(['all', 'mentions', 'none'], {
@@ -33,24 +37,83 @@ const notificationsFormSchema = z.object({
 
 type NotificationsFormValues = z.infer<typeof notificationsFormSchema>
 
-// This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
-  communication_emails: false,
-  marketing_emails: false,
-  social_emails: true,
-  security_emails: true,
-}
-
 export function NotificationsForm() {
+  const preferences = useQuery(api.notificationPreferences.getNotificationPreferences)
+  const updatePreferences = useMutation(api.notificationPreferences.updateNotificationPreferences)
+  const sendTestNotification = useMutation(api.notifications.sendTestNotification)
+
   const form = useForm<NotificationsFormValues>({
     resolver: zodResolver(notificationsFormSchema),
-    defaultValues,
+    defaultValues: {
+      type: 'all',
+      communication_emails: false,
+      marketing_emails: false,
+      social_emails: true,
+      security_emails: true,
+      mobile: false,
+    },
   })
+
+  // Update form when preferences load
+  useEffect(() => {
+    if (preferences) {
+      form.reset({
+        type: preferences.inApp?.type || 'all',
+        communication_emails: preferences.email?.communication || false,
+        marketing_emails: preferences.email?.marketing || false,
+        social_emails: preferences.email?.social || true,
+        security_emails: preferences.email?.security || true,
+        mobile: preferences.mobile || false,
+      })
+    }
+  }, [preferences, form])
+
+  async function onSubmit(data: NotificationsFormValues) {
+    try {
+      await updatePreferences({
+        inApp: {
+          type: data.type,
+          enabled: data.type !== 'none',
+        },
+        email: {
+          communication: data.communication_emails,
+          marketing: data.marketing_emails,
+          social: data.social_emails,
+          security: data.security_emails,
+        },
+        mobile: data.mobile,
+      })
+      
+      toast.success('Notification preferences updated')
+      
+      // Send a test notification to confirm it's working
+      if (data.type !== 'none') {
+        await sendTestNotification({
+          type: 'settings_updated',
+          title: 'Settings Updated',
+          message: 'Your notification preferences have been updated successfully.',
+        })
+      }
+    } catch (error) {
+      toast.error('Failed to update notification preferences')
+      console.error('Failed to update preferences:', error)
+    }
+  }
+
+  if (!preferences) {
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    )
+  }
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((data) => showSubmittedData(data))}
+        onSubmit={form.handleSubmit(onSubmit)}
         className='space-y-8'
       >
         <FormField
@@ -62,7 +125,7 @@ export function NotificationsForm() {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className='flex flex-col space-y-1'
                 >
                   <FormItem className='flex items-center space-y-0 space-x-3'>

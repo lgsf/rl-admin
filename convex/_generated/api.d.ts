@@ -17,6 +17,8 @@ import type * as appearance from "../appearance.js";
 import type * as auth from "../auth.js";
 import type * as dashboard from "../dashboard.js";
 import type * as lib_permissions from "../lib/permissions.js";
+import type * as notificationPreferences from "../notificationPreferences.js";
+import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   dashboard: typeof dashboard;
   "lib/permissions": typeof lib_permissions;
+  notificationPreferences: typeof notificationPreferences;
+  notifications: typeof notifications;
   organizations: typeof organizations;
   tasks: typeof tasks;
   users: typeof users;

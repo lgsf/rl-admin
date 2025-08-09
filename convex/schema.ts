@@ -36,8 +36,37 @@ export default defineSchema({
       theme: v.optional(v.string()),
       font: v.optional(v.string()),
       language: v.optional(v.string()),
-      notifications: v.optional(v.boolean()),
       appearanceLastSync: v.optional(v.number()),
+      // Notification preferences
+      notifications: v.optional(v.object({
+        enabled: v.optional(v.boolean()),
+        // In-app notification settings
+        inApp: v.optional(v.object({
+          enabled: v.optional(v.boolean()),
+          type: v.optional(v.union(
+            v.literal("all"),
+            v.literal("mentions"),
+            v.literal("none")
+          )),
+          playSound: v.optional(v.boolean()),
+          showDesktop: v.optional(v.boolean()),
+        })),
+        // Email notification settings
+        email: v.optional(v.object({
+          enabled: v.optional(v.boolean()),
+          communication: v.optional(v.boolean()),
+          marketing: v.optional(v.boolean()),
+          social: v.optional(v.boolean()),
+          security: v.optional(v.boolean()),
+        })),
+        // Push notification settings
+        push: v.optional(v.object({
+          enabled: v.optional(v.boolean()),
+          subscription: v.optional(v.any()), // Web Push subscription object
+        })),
+        // Mobile settings
+        mobile: v.optional(v.boolean()),
+      })),
     })),
     lastSeenAt: v.optional(v.number()),
     createdAt: v.number(),
