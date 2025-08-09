@@ -16,6 +16,8 @@ import type {
 import type * as appearance from "../appearance.js";
 import type * as auth from "../auth.js";
 import type * as dashboard from "../dashboard.js";
+import type * as groupNotifications from "../groupNotifications.js";
+import type * as groups from "../groups.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as notificationGroups from "../notificationGroups.js";
 import type * as notificationPreferences from "../notificationPreferences.js";
@@ -36,6 +38,8 @@ declare const fullApi: ApiFromModules<{
   appearance: typeof appearance;
   auth: typeof auth;
   dashboard: typeof dashboard;
+  groupNotifications: typeof groupNotifications;
+  groups: typeof groups;
   "lib/permissions": typeof lib_permissions;
   notificationGroups: typeof notificationGroups;
   notificationPreferences: typeof notificationPreferences;

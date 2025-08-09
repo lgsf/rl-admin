@@ -3,6 +3,14 @@
     "in_progress": [],
     "pending": [
       {
+        "id": "29",
+        "content": "Create UI for group management"
+      },
+      {
+        "id": "30",
+        "content": "Update notification test UI to use new groups"
+      },
+      {
         "id": "17",
         "content": "Build notification bell component with badge counter"
       },
@@ -99,8 +107,24 @@
       {
         "id": "24",
         "content": "Add UI for testing group notifications"
+      },
+      {
+        "id": "25",
+        "content": "Design flexible group system architecture"
+      },
+      {
+        "id": "26",
+        "content": "Add groups and groupMembers tables to schema"
+      },
+      {
+        "id": "27",
+        "content": "Create group management functions (CRUD)"
+      },
+      {
+        "id": "28",
+        "content": "Update notification targeting to use new group system"
       }
     ]
   },
-  "last_update": "2025-08-09T22:04:45Z"
+  "last_update": "2025-08-09T22:19:46Z"
 }
