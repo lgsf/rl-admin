@@ -1,10 +1,6 @@
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
@@ -23,13 +19,6 @@ export default function Users() {
   if (convexUsers === undefined) {
     return (
       <UsersProvider>
-        <Header fixed>
-          <Search />
-          <div className='ml-auto flex items-center space-x-4'>
-            <ThemeSwitch />
-            <ProfileDropdown />
-          </div>
-        </Header>
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>
@@ -83,14 +72,6 @@ export default function Users() {
 
   return (
     <UsersProvider>
-      <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>

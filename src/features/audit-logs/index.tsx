@@ -2,11 +2,7 @@ import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { format } from 'date-fns'
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import {
   Table,
   TableBody,
@@ -87,15 +83,7 @@ export default function AuditLogs() {
   // Loading state
   if (logs === undefined) {
     return (
-      <>
-        <Header fixed>
-          <Search />
-          <div className='ml-auto flex items-center space-x-4'>
-            <ThemeSwitch />
-            <ProfileDropdown />
-          </div>
-        </Header>
-        <Main>
+      <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
             <div>
               <h2 className='text-2xl font-bold tracking-tight'>Audit Logs</h2>
@@ -109,22 +97,12 @@ export default function AuditLogs() {
               <Skeleton key={i} className='h-16 w-full' />
             ))}
           </div>
-        </Main>
-      </>
+      </Main>
     )
   }
 
   return (
-    <>
-      <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-
-      <Main>
+    <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>Audit Logs</h2>
@@ -239,7 +217,6 @@ export default function AuditLogs() {
             </Table>
           </div>
         </div>
-      </Main>
-    </>
+    </Main>
   )
 }
