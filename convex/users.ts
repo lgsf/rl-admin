@@ -24,7 +24,6 @@ export const list = query({
       v.literal("superadmin"),
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     )),
     search: v.optional(v.string()),
@@ -111,7 +110,6 @@ export const create = mutation({
       v.literal("superadmin"),
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     ),
     status: v.union(
@@ -182,7 +180,6 @@ export const update = mutation({
       v.literal("superadmin"),
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     )),
     status: v.optional(v.union(
@@ -296,7 +293,6 @@ export const invite = mutation({
     role: v.union(
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     ),
   },
@@ -398,7 +394,6 @@ export const getStats = query({
         superadmin: users.filter(u => u.role === "superadmin").length,
         admin: users.filter(u => u.role === "admin").length,
         manager: users.filter(u => u.role === "manager").length,
-        cashier: users.filter(u => u.role === "cashier").length,
         user: users.filter(u => u.role === "user").length,
       },
       recentlyActive: users.filter(u => 
@@ -407,5 +402,218 @@ export const getStats = query({
     };
 
     return stats;
+  },
+});
+
+/**
+ * Update user's role and system groups
+ */
+export const updateRoleAndGroups = mutation({
+  args: {
+    userId: v.id("users"),
+    role: v.optional(v.union(
+      v.literal("superadmin"),
+      v.literal("admin"),
+      v.literal("manager"),
+      v.literal("user")
+    )),
+    systemGroups: v.optional(v.array(v.id("groups"))),
+  },
+  handler: async (ctx, args) => {
+    const currentUser = await requirePermission(ctx, "users:write");
+    
+    // Only superadmin and admin can update roles and system groups
+    if (currentUser.role !== "superadmin" && currentUser.role !== "admin") {
+      throw new Error("Insufficient permissions to update user roles and groups");
+    }
+    
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+    
+    // Check role hierarchy
+    if (args.role && !canManageUser(currentUser.role, args.role)) {
+      throw new Error("Cannot assign higher or equal role");
+    }
+    
+    // Prepare updates
+    const updates: any = { updatedAt: Date.now() };
+    
+    // Update role if provided
+    if (args.role !== undefined) {
+      updates.role = args.role;
+      
+      // Auto-update system groups based on role
+      const allUsersGroup = await ctx.db
+        .query("groups")
+        .filter(q => q.and(
+          q.eq(q.field("name"), "all-users"),
+          q.eq(q.field("organizationId"), undefined)
+        ))
+        .first();
+      
+      const platformAdminsGroup = await ctx.db
+        .query("groups")
+        .filter(q => q.and(
+          q.eq(q.field("name"), "platform-admins"),
+          q.eq(q.field("organizationId"), undefined)
+        ))
+        .first();
+      
+      const platformManagersGroup = await ctx.db
+        .query("groups")
+        .filter(q => q.and(
+          q.eq(q.field("name"), "platform-managers"),
+          q.eq(q.field("organizationId"), undefined)
+        ))
+        .first();
+      
+      // Build new system groups array based on role
+      const newSystemGroups: Id<"groups">[] = [];
+      
+      if (allUsersGroup) {
+        newSystemGroups.push(allUsersGroup._id);
+      }
+      
+      if ((args.role === "superadmin" || args.role === "admin") && platformAdminsGroup) {
+        newSystemGroups.push(platformAdminsGroup._id);
+      }
+      
+      if ((args.role === "manager") && platformManagersGroup) {
+        newSystemGroups.push(platformManagersGroup._id);
+      }
+      
+      updates.systemGroups = newSystemGroups;
+      
+      // Update group memberships
+      // Remove from all system groups first
+      const existingMemberships = await ctx.db
+        .query("groupMembers")
+        .filter(q => q.eq(q.field("userId"), args.userId))
+        .collect();
+      
+      for (const membership of existingMemberships) {
+        const group = await ctx.db.get(membership.groupId);
+        if (group && group.organizationId === undefined) {
+          // It's a system group, remove membership
+          await ctx.db.delete(membership._id);
+        }
+      }
+      
+      // Add new memberships
+      for (const groupId of newSystemGroups) {
+        await ctx.db.insert("groupMembers", {
+          groupId,
+          userId: args.userId,
+          role: "member" as const,
+          joinedAt: Date.now(),
+          status: "active" as const,
+        });
+      }
+    }
+    
+    // Update system groups if explicitly provided
+    if (args.systemGroups !== undefined) {
+      updates.systemGroups = args.systemGroups;
+      
+      // Update group memberships
+      const existingMemberships = await ctx.db
+        .query("groupMembers")
+        .filter(q => q.eq(q.field("userId"), args.userId))
+        .collect();
+      
+      // Remove from all system groups first
+      for (const membership of existingMemberships) {
+        const group = await ctx.db.get(membership.groupId);
+        if (group && group.organizationId === undefined) {
+          await ctx.db.delete(membership._id);
+        }
+      }
+      
+      // Add new memberships
+      for (const groupId of args.systemGroups) {
+        await ctx.db.insert("groupMembers", {
+          groupId,
+          userId: args.userId,
+          role: "member" as const,
+          joinedAt: Date.now(),
+          status: "active" as const,
+        });
+      }
+    }
+    
+    // Apply updates
+    await ctx.db.patch(args.userId, updates);
+    
+    // Log audit event
+    if (currentUser.organizationId) {
+      await ctx.db.insert("auditLogs", {
+        organizationId: currentUser.organizationId,
+        userId: currentUser._id,
+        action: "user.role_updated",
+        resource: "users",
+        resourceId: args.userId,
+        changes: updates,
+        createdAt: Date.now(),
+      });
+    }
+    
+    return args.userId;
+  },
+});
+
+/**
+ * Get all users with their system groups for management
+ */
+export const getUsersWithSystemGroups = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", q => q.eq("clerkId", identity.subject))
+      .first();
+    
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+    
+    // Only superadmin and admin can see all users
+    if (currentUser.role !== "superadmin" && currentUser.role !== "admin") {
+      throw new Error("Insufficient permissions");
+    }
+    
+    const users = await ctx.db.query("users").collect();
+    
+    // Get all system groups
+    const systemGroups = await ctx.db
+      .query("groups")
+      .filter(q => q.eq(q.field("organizationId"), undefined))
+      .collect();
+    
+    // Get user system group details
+    const usersWithGroups = await Promise.all(users.map(async (user) => {
+      const userSystemGroups = user.systemGroups || [];
+      const groupDetails = await Promise.all(
+        userSystemGroups.map(groupId => ctx.db.get(groupId))
+      );
+      
+      return {
+        ...user,
+        systemGroupNames: groupDetails
+          .filter(g => g !== null)
+          .map(g => g!.name),
+      };
+    }));
+    
+    return {
+      users: usersWithGroups,
+      systemGroups,
+    };
   },
 });

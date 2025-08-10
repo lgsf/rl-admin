@@ -19,9 +19,10 @@ Users ──┬── Memberships ──── Organizations
 ## Architecture Overview
 
 ### Three-Level Access Control
-1. **System Roles** (`users.role`) - Platform-wide feature access
-2. **Organization Memberships** (`memberships`) - Organization-specific permissions
-3. **Groups** (`groups` + `groupMembers`) - Flexible grouping for notifications
+1. **System Roles** (`users.role`) - Platform-wide feature access control
+2. **System Groups** (`users.systemGroups[]`) - Platform-wide targeting for notifications/campaigns
+3. **Organization Memberships** (`users.memberships[]`) - Links to organizations
+4. **Organization Groups** (`users.groups[]`) - Team/department groups within organizations
 
 ## Core Entities
 
@@ -30,15 +31,23 @@ Users ──┬── Memberships ──── Organizations
 **Key Fields**:
 - `clerkId`: Unique identifier from Clerk
 - `role`: System-wide role (superadmin, admin, manager, user)
+- `systemGroups[]`: Array of system group IDs for platform-wide targeting
+- `groups[]`: Array of organization group IDs user belongs to
+- `memberships[]`: Array of organization membership IDs
 - `status`: Account status (active, inactive, invited, suspended)
 - `organizationId`: Optional link to primary organization
 - `preferences`: User settings including appearance and notifications
 
 **System Role Permissions**:
-- `superadmin`: Full platform control, access all organizations
-- `admin`: Admin panel access, manage own organizations
-- `manager`: Team management, moderate features
+- `superadmin`: Full platform control, access all organizations, manage system groups
+- `admin`: Admin panel access, notification panel, manage organizations
+- `manager`: Team management, moderate features, basic analytics
 - `user`: Basic features only
+
+**Relationship Arrays**:
+- `systemGroups`: Platform-wide groups (e.g., "all-users", "platform-admins")
+- `groups`: Organization-specific groups (e.g., "Engineering Team", "Marketing")
+- `memberships`: Links to organization membership records
 
 ### 2. Organizations
 **Purpose**: Multi-tenant support, allowing multiple companies/teams to use the platform
@@ -61,19 +70,25 @@ Users ──┬── Memberships ──── Organizations
 
 **Two Types**:
 
+#### System Groups (Platform-wide)
+- `organizationId`: undefined/null (platform-wide)
+- `type`: 'standalone' (using existing schema)
+- **Access**: Based on system role or public
+- **Management**: Only superadmins can create/manage
+- **Default Groups**:
+  - "all-users": All registered users (auto-added on signup)
+  - "platform-admins": Superadmins and admins only
+  - "platform-managers": Managers and above
+- **Examples**: "Beta Testers", "Premium Users", "Campaign Recipients"
+- **Use Cases**: System notifications, platform announcements, feature rollouts
+
 #### Organization Groups
 - `organizationId`: Required (links to organization)
-- `type`: 'organization', 'department', 'project', 'team', 'custom'
+- `type`: 'organization', 'department', 'project', 'custom'
 - **Access**: Only organization members can join
 - **Management**: Organization admins/owners can create
 - **Examples**: "Engineering Team", "Marketing", "Project Alpha"
-
-#### System Groups
-- `organizationId`: null (platform-wide)
-- `type`: 'system', 'announcement', 'community'
-- **Access**: Based on system role or public
-- **Management**: Only superadmins can create
-- **Examples**: "All Users", "Platform Admins", "Feature Updates"
+- **Use Cases**: Team notifications, project updates, department announcements
 
 **Common Fields**:
 - `visibility`: public, private, organization

@@ -21,9 +21,12 @@ export default defineSchema({
       v.literal("superadmin"),
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     ),
+    // Relationship arrays for tracking memberships
+    systemGroups: v.optional(v.array(v.id("groups"))), // Platform-wide system groups
+    groups: v.optional(v.array(v.id("groups"))), // Organization-specific groups
+    memberships: v.optional(v.array(v.id("memberships"))), // Organization memberships
     status: v.union(
       v.literal("active"),
       v.literal("inactive"),

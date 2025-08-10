@@ -316,9 +316,11 @@ export const createSystemGroup = mutation({
     slug: v.string(),
     description: v.optional(v.string()),
     type: v.union(
-      v.literal("system"),
-      v.literal("announcement"),
-      v.literal("community")
+      v.literal("standalone"),
+      v.literal("organization"),
+      v.literal("department"),
+      v.literal("project"),
+      v.literal("custom")
     ),
     visibility: v.union(
       v.literal("public"),
@@ -362,7 +364,7 @@ export const createSystemGroup = mutation({
       name: args.name,
       slug: args.slug,
       description: args.description,
-      type: args.type,
+      type: "standalone" as const, // System groups are standalone
       organizationId: undefined, // System groups have no organization
       visibility: args.visibility,
       ownerId: user._id,

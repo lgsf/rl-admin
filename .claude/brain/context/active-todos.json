@@ -2,53 +2,45 @@
   "todos": {
     "in_progress": [
       {
-        "id": "2",
-        "content": "Fix groups.ts Convex backend functions"
+        "id": "10",
+        "content": "Test group creation and membership flow"
       }
     ],
     "pending": [
       {
         "id": "3",
-        "content": "Create validation helpers for group membership"
+        "content": "Test system notifications functions in Convex dashboard"
       },
       {
         "id": "4",
-        "content": "Add system group management functions"
+        "content": "Refactor groups.ts for organization-only groups"
       },
       {
         "id": "5",
-        "content": "Create organization group management functions"
-      },
-      {
-        "id": "6",
-        "content": "Build groups management UI following existing patterns"
+        "content": "Create validation helpers for group membership"
       },
       {
         "id": "7",
-        "content": "Update notification test UI to use new groups"
+        "content": "Create organization group management functions"
       },
       {
         "id": "8",
-        "content": "Run lint and typecheck after each implementation"
-      },
-      {
-        "id": "9",
-        "content": "Test group creation and membership flow"
-      },
-      {
-        "id": "10",
-        "content": "Build notification bell component with badge counter"
+        "content": "Update notification test UI to use new groups"
       },
       {
         "id": "11",
-        "content": "Create notification dropdown/panel UI"
+        "content": "Build notification bell component with badge counter"
       },
       {
         "id": "12",
-        "content": "Implement real-time notification subscriptions"
+        "content": "Create notification dropdown/panel UI"
       },
       {
         "id": "13",
+        "content": "Implement real-time notification subscriptions"
+      },
+      {
+        "id": "14",
         "content": "Document all changes in ACTIVE_SESSION.md"
       }
     ],
@@ -56,8 +48,36 @@
       {
         "id": "1",
         "content": "Update SCHEMA_DOCUMENTATION.md with simplified architecture"
+      },
+      {
+        "id": "2",
+        "content": "Create system-roles notification targeting"
+      },
+      {
+        "id": "15",
+        "content": "Fix user creation to add to default system groups"
+      },
+      {
+        "id": "16",
+        "content": "Update documentation with current implementation"
+      },
+      {
+        "id": "6",
+        "content": "Build groups management UI following existing patterns"
+      },
+      {
+        "id": "17",
+        "content": "Hide System Groups menu from non-admin users"
+      },
+      {
+        "id": "18",
+        "content": "Fix users page and add role/system group management"
+      },
+      {
+        "id": "9",
+        "content": "Run lint and typecheck after each implementation"
       }
     ]
   },
-  "last_update": "2025-08-09T23:22:15Z"
+  "last_update": "2025-08-10T01:04:54Z"
 }

@@ -23,6 +23,8 @@ import type * as notificationGroups from "../notificationGroups.js";
 import type * as notificationPreferences from "../notificationPreferences.js";
 import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
+import type * as systemGroups from "../systemGroups.js";
+import type * as systemNotifications from "../systemNotifications.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 
@@ -45,6 +47,8 @@ declare const fullApi: ApiFromModules<{
   notificationPreferences: typeof notificationPreferences;
   notifications: typeof notifications;
   organizations: typeof organizations;
+  systemGroups: typeof systemGroups;
+  systemNotifications: typeof systemNotifications;
   tasks: typeof tasks;
   users: typeof users;
 }>;

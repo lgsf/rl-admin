@@ -1,7 +1,10 @@
 # Implementation Plan: Groups & Notification System
 
 ## 🎯 Objective
-Implement a complete groups and notification system with proper separation between system roles, organization memberships, and flexible group management.
+Implement a complete groups and notification system with clear separation:
+1. **System Roles** (superadmin, admin, manager, user) - Platform access control
+2. **Organization Groups** - Teams/departments within organizations
+3. **Notification Targeting** - Target by role, organization, or group
 
 ## 📋 Task Template Pattern
 Each major task follows this pattern:
@@ -21,19 +24,36 @@ Each major task follows this pattern:
 - [x] Document simplified architecture
 - [x] Define clear separation of concerns
 - [x] Update SCHEMA_DOCUMENTATION.md
-- [x] Run lint check
-- [ ] Commit changes
+- [x] Add user relationship arrays documentation
+- [x] Document system vs organization groups
 
-#### Task 2: Fix groups.ts Backend
+#### Task 2: Create System Role Notification Functions ✅
 **Subtasks:**
-- [ ] Fix TypeScript errors in groups.ts
-- [ ] Ensure schema compatibility
-- [ ] Add proper type definitions
-- [ ] Run `npx convex dev --once` to verify
-- [ ] Run lint and typecheck
-- [ ] Test with Convex dashboard
+- [x] Create `notifyBySystemRole()` function
+- [x] Add functions for each role (notifyAdmins, notifyManagers, etc.)
+- [x] Add validation for role hierarchy
+- [x] Create `systemNotifications.ts` with proper Convex patterns
+- [x] Add `notifyAllUsers()` for platform announcements
+- [x] Add `sendSystemAlert()` for critical alerts
 
-#### Task 3: Create Validation Helpers
+#### Task 3: Update User Schema ✅
+**Subtasks:**
+- [x] Add `systemGroups[]` array to users table
+- [x] Add `groups[]` array for organization groups
+- [x] Add `memberships[]` array for organization links
+- [x] Update user creation flow in `auth.ts`
+- [x] Auto-add users to "all-users" system group on signup
+
+#### Task 4: Create System Groups Functions ✅
+**Subtasks:**
+- [x] Create `systemGroups.ts` file
+- [x] Add `initializeSystemGroups()` mutation
+- [x] Add `checkFeatureAccess()` query
+- [x] Add `getUserGroupDetails()` query
+- [x] Add `addUserToSystemGroup()` mutation
+- [x] Create default system groups (all-users, platform-admins, platform-managers)
+
+#### Task 5: Create Validation Helpers (NEXT)
 **Subtasks:**
 - [ ] Create `convex/lib/groupHelpers.ts`
 - [ ] Add `canJoinGroup()` function
@@ -43,21 +63,21 @@ Each major task follows this pattern:
 - [ ] Run typecheck
 - [ ] Write test cases
 
-#### Task 4: System Group Functions
+#### Task 6: Refactor groups.ts for Organization-Only Groups
 **Subtasks:**
-- [ ] Add `createSystemGroup()` mutation
-- [ ] Add `getSystemGroups()` query
-- [ ] Add superadmin validation
-- [ ] Add auto-membership rules
+- [ ] Remove system group logic from groups.ts
+- [ ] Ensure all groups require organizationId
+- [ ] Update types to match schema (department, project, custom, etc.)
+- [ ] Fix TypeScript errors
 - [ ] Deploy to Convex
 - [ ] Test in dashboard
 
 #### Task 5: Organization Group Functions
 **Subtasks:**
-- [ ] Add `createOrgGroup()` mutation
+- [ ] Add `createGroup()` mutation for org groups
 - [ ] Add `getOrgGroups()` query
-- [ ] Add membership validation
-- [ ] Add org admin checks
+- [ ] Add membership validation (must be org member)
+- [ ] Add org admin checks for management
 - [ ] Deploy to Convex
 - [ ] Test in dashboard
 
@@ -171,18 +191,24 @@ npx convex run         # Run Convex function
 
 ### Current Status
 - **Phase**: 1 - Backend Foundation
-- **Current Task**: Fix groups.ts Backend
+- **Current Task**: Testing and Validation
 - **Blockers**: None
 
 ### Completed Tasks
-- [x] Architecture planning
-- [x] Schema design
+- [x] Architecture planning  
+- [x] Schema design with relationship arrays
 - [x] Update Schema Documentation (Task 1)
+- [x] Create System Role Notification Functions (Task 2)
+- [x] Update User Schema (Task 3)
+- [x] Create System Groups Functions (Task 4)
+- [x] Update user creation flow to auto-add to system groups
 
 ### Next Actions
-1. Fix groups.ts TypeScript errors (IN PROGRESS)
-2. Create validation helpers
-3. Add system group management functions
+1. Test system notifications in Convex dashboard
+2. Initialize system groups via dashboard
+3. Test user creation with auto-group assignment
+4. Create validation helpers
+5. Refactor groups.ts for org-only groups
 
 ## 🔍 Quality Checklist
 Before marking any task complete:
@@ -197,11 +223,21 @@ Before marking any task complete:
 ## 📝 Notes & Decisions
 
 ### Key Decisions Made
-1. Simplified to 4 system roles (no cashier)
-2. Groups are flexible - orgs define their own
-3. Clear separation: system roles vs org membership vs groups
-4. System groups for platform-wide notifications
-5. Organization groups require membership
+1. **System roles**: superadmin, admin, manager, user (no "cashier" or "banned" roles)
+2. **User relationship arrays**:
+   - `systemGroups[]`: Platform-wide groups for targeting
+   - `groups[]`: Organization-specific groups
+   - `memberships[]`: Organization membership records
+3. **Clear separation**:
+   - System roles: Platform feature access control
+   - System groups: Platform-wide notification targeting
+   - Organization groups: Team/department grouping
+4. **Auto-assignment**: Users auto-added to "all-users" system group on signup
+5. **Notification targeting**: Can target by role, system group, or org group
+6. **Default system groups**:
+   - "all-users": Every registered user
+   - "platform-admins": Superadmins and admins
+   - "platform-managers": Managers and above
 
 ### Open Questions
 1. Should org members auto-join certain groups?

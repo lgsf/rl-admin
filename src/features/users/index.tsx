@@ -17,6 +17,7 @@ import { users as mockUsers } from './data/users'
 export default function Users() {
   // Fetch users from Convex
   const convexUsers = useQuery(api.users.list, {})
+  const usersWithGroups = useQuery(api.users.getUsersWithSystemGroups, {})
   
   // Loading state
   if (convexUsers === undefined) {
@@ -49,7 +50,7 @@ export default function Users() {
   }
   
   // Transform Convex users to match the expected schema
-  const transformedUsers = convexUsers?.map(user => ({
+  const transformedUsers = usersWithGroups?.users?.map(user => ({
     id: user._id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -58,6 +59,19 @@ export default function Users() {
     phoneNumber: user.phoneNumber || '',
     status: user.status,
     role: user.role,
+    systemGroups: user.systemGroupNames || [],
+    createdAt: new Date(user.createdAt),
+    updatedAt: new Date(user.updatedAt),
+  })) || convexUsers?.map(user => ({
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
+    email: user.email,
+    phoneNumber: user.phoneNumber || '',
+    status: user.status,
+    role: user.role,
+    systemGroups: [],
     createdAt: new Date(user.createdAt),
     updatedAt: new Date(user.updatedAt),
   })) || []

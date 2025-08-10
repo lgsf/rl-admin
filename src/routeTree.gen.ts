@@ -35,8 +35,10 @@ import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authentica
 import { Route as ClerkAuthenticatedUserManagementRouteImport } from './routes/clerk/_authenticated/user-management'
 import { Route as ClerkauthSignUpRouteImport } from './routes/clerk/(auth)/sign-up'
 import { Route as ClerkauthSignInRouteImport } from './routes/clerk/(auth)/sign-in'
+import { Route as AuthenticatedSettingsSystemGroupsRouteImport } from './routes/_authenticated/settings/system-groups'
 import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
 import { Route as AuthenticatedSettingsNotificationTestRouteImport } from './routes/_authenticated/settings/notification-test'
+import { Route as AuthenticatedSettingsGroupsRouteImport } from './routes/_authenticated/settings/groups'
 import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
@@ -172,6 +174,12 @@ const ClerkauthSignInRoute = ClerkauthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => ClerkauthRouteRoute,
 } as any)
+const AuthenticatedSettingsSystemGroupsRoute =
+  AuthenticatedSettingsSystemGroupsRouteImport.update({
+    id: '/system-groups',
+    path: '/system-groups',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
 const AuthenticatedSettingsNotificationsRoute =
   AuthenticatedSettingsNotificationsRouteImport.update({
     id: '/notifications',
@@ -182,6 +190,12 @@ const AuthenticatedSettingsNotificationTestRoute =
   AuthenticatedSettingsNotificationTestRouteImport.update({
     id: '/notification-test',
     path: '/notification-test',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsGroupsRoute =
+  AuthenticatedSettingsGroupsRouteImport.update({
+    id: '/groups',
+    path: '/groups',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
 const AuthenticatedSettingsDisplayRoute =
@@ -222,8 +236,10 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/sign-in': typeof ClerkauthSignInRoute
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -251,8 +267,10 @@ export interface FileRoutesByTo {
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/sign-in': typeof ClerkauthSignInRoute
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -285,8 +303,10 @@ export interface FileRoutesById {
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/_authenticated/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/_authenticated/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/_authenticated/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/(auth)/sign-in': typeof ClerkauthSignInRoute
   '/clerk/(auth)/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/_authenticated/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -318,8 +338,10 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
+    | '/settings/groups'
     | '/settings/notification-test'
     | '/settings/notifications'
+    | '/settings/system-groups'
     | '/clerk/sign-in'
     | '/clerk/sign-up'
     | '/clerk/user-management'
@@ -347,8 +369,10 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
+    | '/settings/groups'
     | '/settings/notification-test'
     | '/settings/notifications'
+    | '/settings/system-groups'
     | '/clerk/sign-in'
     | '/clerk/sign-up'
     | '/clerk/user-management'
@@ -380,8 +404,10 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
+    | '/_authenticated/settings/groups'
     | '/_authenticated/settings/notification-test'
     | '/_authenticated/settings/notifications'
+    | '/_authenticated/settings/system-groups'
     | '/clerk/(auth)/sign-in'
     | '/clerk/(auth)/sign-up'
     | '/clerk/_authenticated/user-management'
@@ -593,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClerkauthSignInRouteImport
       parentRoute: typeof ClerkauthRouteRoute
     }
+    '/_authenticated/settings/system-groups': {
+      id: '/_authenticated/settings/system-groups'
+      path: '/system-groups'
+      fullPath: '/settings/system-groups'
+      preLoaderRoute: typeof AuthenticatedSettingsSystemGroupsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
     '/_authenticated/settings/notifications': {
       id: '/_authenticated/settings/notifications'
       path: '/notifications'
@@ -605,6 +638,13 @@ declare module '@tanstack/react-router' {
       path: '/notification-test'
       fullPath: '/settings/notification-test'
       preLoaderRoute: typeof AuthenticatedSettingsNotificationTestRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/groups': {
+      id: '/_authenticated/settings/groups'
+      path: '/groups'
+      fullPath: '/settings/groups'
+      preLoaderRoute: typeof AuthenticatedSettingsGroupsRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/settings/display': {
@@ -635,8 +675,10 @@ interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsAccountRoute: typeof AuthenticatedSettingsAccountRoute
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
   AuthenticatedSettingsDisplayRoute: typeof AuthenticatedSettingsDisplayRoute
+  AuthenticatedSettingsGroupsRoute: typeof AuthenticatedSettingsGroupsRoute
   AuthenticatedSettingsNotificationTestRoute: typeof AuthenticatedSettingsNotificationTestRoute
   AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
+  AuthenticatedSettingsSystemGroupsRoute: typeof AuthenticatedSettingsSystemGroupsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -645,10 +687,13 @@ const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteCh
     AuthenticatedSettingsAccountRoute: AuthenticatedSettingsAccountRoute,
     AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
     AuthenticatedSettingsDisplayRoute: AuthenticatedSettingsDisplayRoute,
+    AuthenticatedSettingsGroupsRoute: AuthenticatedSettingsGroupsRoute,
     AuthenticatedSettingsNotificationTestRoute:
       AuthenticatedSettingsNotificationTestRoute,
     AuthenticatedSettingsNotificationsRoute:
       AuthenticatedSettingsNotificationsRoute,
+    AuthenticatedSettingsSystemGroupsRoute:
+      AuthenticatedSettingsSystemGroupsRoute,
     AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   }
 
