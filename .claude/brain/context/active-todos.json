@@ -2,8 +2,8 @@
   "todos": {
     "in_progress": [
       {
-        "id": "10",
-        "content": "Test group creation and membership flow"
+        "id": "11",
+        "content": "Build notification bell component with badge counter"
       }
     ],
     "pending": [
@@ -26,10 +26,6 @@
       {
         "id": "8",
         "content": "Update notification test UI to use new groups"
-      },
-      {
-        "id": "11",
-        "content": "Build notification bell component with badge counter"
       },
       {
         "id": "12",
@@ -76,8 +72,32 @@
       {
         "id": "9",
         "content": "Run lint and typecheck after each implementation"
+      },
+      {
+        "id": "10",
+        "content": "Test group creation and membership flow"
+      },
+      {
+        "id": "19",
+        "content": "Update permissions: superadmin bypass all, role/groups for superadmin only"
+      },
+      {
+        "id": "20",
+        "content": "Implement hard delete for users (remove from DB and Clerk)"
+      },
+      {
+        "id": "21",
+        "content": "Create activate/deactivate user functionality with dialog"
+      },
+      {
+        "id": "22",
+        "content": "Implement access control for suspended/inactive users"
+      },
+      {
+        "id": "23",
+        "content": "Refactor audit logs page to match app patterns"
       }
     ]
   },
-  "last_update": "2025-08-10T01:04:54Z"
+  "last_update": "2025-08-10T21:16:56Z"
 }

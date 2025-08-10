@@ -32,13 +32,11 @@ import { User } from '../data/schema'
 import { Id } from '../../../../convex/_generated/dataModel'
 
 const formSchema = z.object({
-  firstName: z.string().min(1, 'First Name is required.'),
-  lastName: z.string().min(1, 'Last Name is required.'),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   username: z.string().min(1, 'Username is required.'),
-  phoneNumber: z.string().min(1, 'Phone number is required.'),
-  email: z.email({
-    error: (iss) => (iss.input === '' ? 'Email is required.' : undefined),
-  }),
+  phoneNumber: z.string().optional(),
+  email: z.string().min(1, 'Email is required.').email('Invalid email address'),
   role: z.string().min(1, 'Role is required.'),
   systemGroups: z.array(z.string()).optional(),
   isEdit: z.boolean(),
@@ -57,6 +55,7 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
   const updateRoleAndGroups = useMutation(api.users.updateRoleAndGroups)
   const createUser = useMutation(api.users.create)
   const systemGroupsData = useQuery(api.users.getUsersWithSystemGroups, {})
+  const currentUserQuery = useQuery(api.users.getCurrentUser, {})
   
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
@@ -78,41 +77,63 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
         },
   })
 
+  const isSuperAdmin = currentUserQuery?.role === "superadmin"
+  const isAdmin = currentUserQuery?.role === "admin"
+  // Only superadmins and admins can manage roles
+  const canManageRoles = isSuperAdmin || isAdmin
+  
   const onSubmit = async (values: UserForm) => {
     try {
       if (isEdit && currentRow) {
         // Update basic user info (email cannot be updated via this mutation)
-        await updateUser({
+        const updateData: any = {
           userId: currentRow.id as Id<"users">,
-          firstName: values.firstName,
-          lastName: values.lastName,
           username: values.username,
-          phoneNumber: values.phoneNumber,
-        })
+        }
+        // Only include optional fields if they have values
+        if (values.firstName) updateData.firstName = values.firstName
+        if (values.lastName) updateData.lastName = values.lastName
+        if (values.phoneNumber) updateData.phoneNumber = values.phoneNumber
+        
+        await updateUser(updateData)
         
         // Update role and system groups if changed
-        const systemGroupIds = systemGroupsData?.systemGroups
-          .filter(g => values.systemGroups?.includes(g.name))
-          .map(g => g._id)
-        
-        await updateRoleAndGroups({
-          userId: currentRow.id as Id<"users">,
-          role: values.role as "superadmin" | "admin" | "manager" | "user",
-          systemGroups: systemGroupIds,
-        })
+        // Only superadmin can update system groups
+        // Admins can update roles to manager/user
+        if (isSuperAdmin) {
+          const systemGroupIds = systemGroupsData?.systemGroups
+            .filter(g => values.systemGroups?.includes(g.name))
+            .map(g => g._id)
+          
+          await updateRoleAndGroups({
+            userId: currentRow.id as Id<"users">,
+            role: values.role as "superadmin" | "admin" | "manager" | "user",
+            systemGroups: systemGroupIds,
+          })
+        } else if (isAdmin && values.role !== currentRow.role) {
+          // Admin can only set roles to manager or user
+          await updateRoleAndGroups({
+            userId: currentRow.id as Id<"users">,
+            role: values.role as "superadmin" | "admin" | "manager" | "user",
+            systemGroups: undefined, // Don't change system groups
+          })
+        }
         
         toast.success('User updated successfully')
       } else {
         // Create new user (password will be set via Clerk on first login)
-        await createUser({
+        const createData: any = {
           email: values.email,
-          firstName: values.firstName,
-          lastName: values.lastName,
           username: values.username,
-          phoneNumber: values.phoneNumber,
           role: values.role as "superadmin" | "admin" | "manager" | "user",
           status: "invited" as const,
-        })
+        }
+        // Only include optional fields if they have values
+        if (values.firstName) createData.firstName = values.firstName
+        if (values.lastName) createData.lastName = values.lastName
+        if (values.phoneNumber) createData.phoneNumber = values.phoneNumber
+        
+        await createUser(createData)
         
         toast.success('User created successfully')
       }
@@ -244,29 +265,42 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: Props) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name='role'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-right'>
-                      Role
-                    </FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='Select a role'
-                      className='col-span-4'
-                      items={userTypes.map(({ label, value }) => ({
-                        label,
-                        value,
-                      }))}
-                    />
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              {isEdit && systemGroupsData && (
+              {canManageRoles && (
+                <FormField
+                  control={form.control}
+                  name='role'
+                  render={({ field }) => (
+                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                      <FormLabel className='col-span-2 text-right'>
+                        Role
+                      </FormLabel>
+                      <SelectDropdown
+                        defaultValue={field.value}
+                        onValueChange={field.onChange}
+                        placeholder='Select a role'
+                        className='col-span-4'
+                        items={userTypes
+                          .filter(({ value }) => {
+                            // Superadmin can set any role
+                            if (isSuperAdmin) return true
+                            // Admin cannot set superadmin or admin roles
+                            if (isAdmin) {
+                              return value === 'manager' || value === 'user'
+                            }
+                            // Managers shouldn't be able to set roles at all
+                            return false
+                          })
+                          .map(({ label, value }) => ({
+                            label,
+                            value,
+                          }))}
+                      />
+                      <FormMessage className='col-span-4 col-start-3' />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {isEdit && systemGroupsData && isSuperAdmin && (
                 <FormField
                   control={form.control}
                   name='systemGroups'

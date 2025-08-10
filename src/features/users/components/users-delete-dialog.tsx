@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { IconAlertTriangle } from '@tabler/icons-react'
-import { showSubmittedData } from '@/utils/show-submitted-data'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { User } from '../data/schema'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
+import { toast } from 'sonner'
+import { Id } from '../../../../convex/_generated/dataModel'
 
 interface Props {
   open: boolean
@@ -17,12 +20,19 @@ interface Props {
 
 export function UsersDeleteDialog({ open, onOpenChange, currentRow }: Props) {
   const [value, setValue] = useState('')
+  const deleteUser = useMutation(api.users.remove)
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (value.trim() !== currentRow.username) return
 
-    onOpenChange(false)
-    showSubmittedData(currentRow, 'The following user has been deleted:')
+    try {
+      await deleteUser({ userId: currentRow.id as Id<"users"> })
+      toast.success(`User ${currentRow.username} has been deleted successfully`)
+      onOpenChange(false)
+      setValue('')
+    } catch (error) {
+      toast.error('Failed to delete user: ' + (error as Error).message)
+    }
   }
 
   return (

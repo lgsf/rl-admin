@@ -8,6 +8,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useStatusCheck } from '@/hooks/use-status-check'
 
 interface Props {
   children?: React.ReactNode
@@ -16,6 +17,9 @@ interface Props {
 export function AuthenticatedLayout({ children }: Props) {
   const { isLoaded, isSignedIn } = useUser()
   const defaultOpen = Cookies.get('sidebar_state') !== 'false'
+  
+  // Check user status (this hook handles the redirect internally)
+  useStatusCheck()
 
   // Loading state
   if (!isLoaded) {
