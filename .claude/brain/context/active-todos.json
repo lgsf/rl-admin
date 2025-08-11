@@ -131,8 +131,28 @@
       {
         "id": "34",
         "content": "Remove Headers from Settings page"
+      },
+      {
+        "id": "35",
+        "content": "Create notifications page main component"
+      },
+      {
+        "id": "39",
+        "content": "Add notifications page route"
+      },
+      {
+        "id": "36",
+        "content": "Add notifications route to sidebar"
+      },
+      {
+        "id": "37",
+        "content": "Create notification filters and search"
+      },
+      {
+        "id": "38",
+        "content": "Implement notification actions (mark read, delete)"
       }
     ]
   },
-  "last_update": "2025-08-10T22:37:27Z"
+  "last_update": "2025-08-10T23:20:55Z"
 }
