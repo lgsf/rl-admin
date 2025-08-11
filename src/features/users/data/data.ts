@@ -1,8 +1,8 @@
 import {
-  IconCash,
   IconShield,
   IconUsersGroup,
   IconUserShield,
+  IconUser,
 } from '@tabler/icons-react'
 import { UserStatus } from './schema'
 
@@ -33,8 +33,8 @@ export const userTypes = [
     icon: IconUsersGroup,
   },
   {
-    label: 'Cashier',
-    value: 'cashier',
-    icon: IconCash,
+    label: 'User',
+    value: 'user',
+    icon: IconUser,
   },
 ] as const

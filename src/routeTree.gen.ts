@@ -9,10 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AccountSuspendedRouteImport } from './routes/account-suspended'
 import { Route as ClerkRouteRouteImport } from './routes/clerk/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAuditLogsRouteImport } from './routes/_authenticated/audit-logs'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -35,12 +38,19 @@ import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authentica
 import { Route as ClerkAuthenticatedUserManagementRouteImport } from './routes/clerk/_authenticated/user-management'
 import { Route as ClerkauthSignUpRouteImport } from './routes/clerk/(auth)/sign-up'
 import { Route as ClerkauthSignInRouteImport } from './routes/clerk/(auth)/sign-in'
+import { Route as AuthenticatedSettingsSystemGroupsRouteImport } from './routes/_authenticated/settings/system-groups'
 import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
 import { Route as AuthenticatedSettingsNotificationTestRouteImport } from './routes/_authenticated/settings/notification-test'
+import { Route as AuthenticatedSettingsGroupsRouteImport } from './routes/_authenticated/settings/groups'
 import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 
+const AccountSuspendedRoute = AccountSuspendedRouteImport.update({
+  id: '/account-suspended',
+  path: '/account-suspended',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClerkRouteRoute = ClerkRouteRouteImport.update({
   id: '/clerk',
   path: '/clerk',
@@ -55,9 +65,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditLogsRoute = AuthenticatedAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const errors503Route = errors503RouteImport.update({
@@ -172,6 +193,12 @@ const ClerkauthSignInRoute = ClerkauthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => ClerkauthRouteRoute,
 } as any)
+const AuthenticatedSettingsSystemGroupsRoute =
+  AuthenticatedSettingsSystemGroupsRouteImport.update({
+    id: '/system-groups',
+    path: '/system-groups',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
 const AuthenticatedSettingsNotificationsRoute =
   AuthenticatedSettingsNotificationsRouteImport.update({
     id: '/notifications',
@@ -182,6 +209,12 @@ const AuthenticatedSettingsNotificationTestRoute =
   AuthenticatedSettingsNotificationTestRouteImport.update({
     id: '/notification-test',
     path: '/notification-test',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsGroupsRoute =
+  AuthenticatedSettingsGroupsRouteImport.update({
+    id: '/groups',
+    path: '/groups',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
 const AuthenticatedSettingsDisplayRoute =
@@ -206,6 +239,7 @@ const AuthenticatedSettingsAccountRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
+  '/account-suspended': typeof AccountSuspendedRoute
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/clerk/': typeof ClerkauthRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
@@ -218,12 +252,16 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/sign-in': typeof ClerkauthSignInRoute
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -236,6 +274,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-suspended': typeof AccountSuspendedRoute
   '/clerk': typeof ClerkAuthenticatedRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/otp': typeof authOtpRoute
@@ -247,12 +286,16 @@ export interface FileRoutesByTo {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/sign-in': typeof ClerkauthSignInRoute
   '/clerk/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -268,6 +311,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/clerk': typeof ClerkRouteRouteWithChildren
+  '/account-suspended': typeof AccountSuspendedRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/clerk/(auth)': typeof ClerkauthRouteRouteWithChildren
   '/clerk/_authenticated': typeof ClerkAuthenticatedRouteRouteWithChildren
@@ -281,12 +325,16 @@ export interface FileRoutesById {
   '/(errors)/404': typeof errors404Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
+  '/_authenticated/audit-logs': typeof AuthenticatedAuditLogsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayRoute
+  '/_authenticated/settings/groups': typeof AuthenticatedSettingsGroupsRoute
   '/_authenticated/settings/notification-test': typeof AuthenticatedSettingsNotificationTestRoute
   '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/_authenticated/settings/system-groups': typeof AuthenticatedSettingsSystemGroupsRoute
   '/clerk/(auth)/sign-in': typeof ClerkauthSignInRoute
   '/clerk/(auth)/sign-up': typeof ClerkauthSignUpRoute
   '/clerk/_authenticated/user-management': typeof ClerkAuthenticatedUserManagementRoute
@@ -302,6 +350,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/clerk'
+    | '/account-suspended'
     | '/settings'
     | '/clerk/'
     | '/forgot-password'
@@ -314,12 +363,16 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/audit-logs'
     | '/dashboard'
+    | '/notifications'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
+    | '/settings/groups'
     | '/settings/notification-test'
     | '/settings/notifications'
+    | '/settings/system-groups'
     | '/clerk/sign-in'
     | '/clerk/sign-up'
     | '/clerk/user-management'
@@ -332,6 +385,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account-suspended'
     | '/clerk'
     | '/forgot-password'
     | '/otp'
@@ -343,12 +397,16 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/audit-logs'
     | '/dashboard'
+    | '/notifications'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
+    | '/settings/groups'
     | '/settings/notification-test'
     | '/settings/notifications'
+    | '/settings/system-groups'
     | '/clerk/sign-in'
     | '/clerk/sign-up'
     | '/clerk/user-management'
@@ -363,6 +421,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/clerk'
+    | '/account-suspended'
     | '/_authenticated/settings'
     | '/clerk/(auth)'
     | '/clerk/_authenticated'
@@ -376,12 +435,16 @@ export interface FileRouteTypes {
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
+    | '/_authenticated/audit-logs'
     | '/_authenticated/dashboard'
+    | '/_authenticated/notifications'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
+    | '/_authenticated/settings/groups'
     | '/_authenticated/settings/notification-test'
     | '/_authenticated/settings/notifications'
+    | '/_authenticated/settings/system-groups'
     | '/clerk/(auth)/sign-in'
     | '/clerk/(auth)/sign-up'
     | '/clerk/_authenticated/user-management'
@@ -397,6 +460,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ClerkRouteRoute: typeof ClerkRouteRouteWithChildren
+  AccountSuspendedRoute: typeof AccountSuspendedRoute
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authOtpRoute: typeof authOtpRoute
   authSignInRoute: typeof authSignInRoute
@@ -411,6 +475,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/account-suspended': {
+      id: '/account-suspended'
+      path: '/account-suspended'
+      fullPath: '/account-suspended'
+      preLoaderRoute: typeof AccountSuspendedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clerk': {
       id: '/clerk'
       path: '/clerk'
@@ -432,11 +503,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/audit-logs': {
+      id: '/_authenticated/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuthenticatedAuditLogsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/(errors)/503': {
@@ -593,6 +678,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClerkauthSignInRouteImport
       parentRoute: typeof ClerkauthRouteRoute
     }
+    '/_authenticated/settings/system-groups': {
+      id: '/_authenticated/settings/system-groups'
+      path: '/system-groups'
+      fullPath: '/settings/system-groups'
+      preLoaderRoute: typeof AuthenticatedSettingsSystemGroupsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
     '/_authenticated/settings/notifications': {
       id: '/_authenticated/settings/notifications'
       path: '/notifications'
@@ -605,6 +697,13 @@ declare module '@tanstack/react-router' {
       path: '/notification-test'
       fullPath: '/settings/notification-test'
       preLoaderRoute: typeof AuthenticatedSettingsNotificationTestRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/groups': {
+      id: '/_authenticated/settings/groups'
+      path: '/groups'
+      fullPath: '/settings/groups'
+      preLoaderRoute: typeof AuthenticatedSettingsGroupsRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/settings/display': {
@@ -635,8 +734,10 @@ interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsAccountRoute: typeof AuthenticatedSettingsAccountRoute
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
   AuthenticatedSettingsDisplayRoute: typeof AuthenticatedSettingsDisplayRoute
+  AuthenticatedSettingsGroupsRoute: typeof AuthenticatedSettingsGroupsRoute
   AuthenticatedSettingsNotificationTestRoute: typeof AuthenticatedSettingsNotificationTestRoute
   AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
+  AuthenticatedSettingsSystemGroupsRoute: typeof AuthenticatedSettingsSystemGroupsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -645,10 +746,13 @@ const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteCh
     AuthenticatedSettingsAccountRoute: AuthenticatedSettingsAccountRoute,
     AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
     AuthenticatedSettingsDisplayRoute: AuthenticatedSettingsDisplayRoute,
+    AuthenticatedSettingsGroupsRoute: AuthenticatedSettingsGroupsRoute,
     AuthenticatedSettingsNotificationTestRoute:
       AuthenticatedSettingsNotificationTestRoute,
     AuthenticatedSettingsNotificationsRoute:
       AuthenticatedSettingsNotificationsRoute,
+    AuthenticatedSettingsSystemGroupsRoute:
+      AuthenticatedSettingsSystemGroupsRoute,
     AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   }
 
@@ -659,7 +763,9 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
+  AuthenticatedAuditLogsRoute: typeof AuthenticatedAuditLogsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
@@ -669,7 +775,9 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
+  AuthenticatedAuditLogsRoute: AuthenticatedAuditLogsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
@@ -727,6 +835,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ClerkRouteRoute: ClerkRouteRouteWithChildren,
+  AccountSuspendedRoute: AccountSuspendedRoute,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authOtpRoute: authOtpRoute,
   authSignInRoute: authSignInRoute,

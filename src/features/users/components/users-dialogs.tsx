@@ -1,6 +1,7 @@
 import { useUsers } from '../context/users-context'
 import { UsersActionDialog } from './users-action-dialog'
 import { UsersDeleteDialog } from './users-delete-dialog'
+import { UsersStatusDialog } from './users-status-dialog'
 import { UsersInviteDialog } from './users-invite-dialog'
 
 export function UsersDialogs() {
@@ -38,6 +39,18 @@ export function UsersDialogs() {
             open={open === 'delete'}
             onOpenChange={() => {
               setOpen('delete')
+              setTimeout(() => {
+                setCurrentRow(null)
+              }, 500)
+            }}
+            currentRow={currentRow}
+          />
+
+          <UsersStatusDialog
+            key={`user-status-${currentRow.id}`}
+            open={open === 'status'}
+            onOpenChange={() => {
+              setOpen('status')
               setTimeout(() => {
                 setCurrentRow(null)
               }, 500)

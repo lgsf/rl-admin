@@ -136,6 +136,29 @@ export const columns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: 'systemGroups',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='System Groups' />
+    ),
+    cell: ({ row }) => {
+      const systemGroups = row.getValue('systemGroups') as string[] | undefined
+      if (!systemGroups || systemGroups.length === 0) {
+        return <span className='text-muted-foreground text-sm'>None</span>
+      }
+      return (
+        <div className='flex flex-wrap gap-1'>
+          {systemGroups.map((group) => (
+            <Badge key={group} variant='secondary' className='text-xs'>
+              {group}
+            </Badge>
+          ))}
+        </div>
+      )
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
+  {
     id: 'actions',
     cell: DataTableRowActions,
   },

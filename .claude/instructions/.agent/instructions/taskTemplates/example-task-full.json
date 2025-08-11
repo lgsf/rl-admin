@@ -1,0 +1,492 @@
+{
+  "version": "2.0",
+  "templateVersion": "AI_TASK_TEMPLATE_v2",
+  "board": {
+    "name": "Automated Kanban Development",
+    "description": "Self-managed development using AI-optimized task template"
+  },
+  "tasks": [
+    {
+      "metadata": {
+        "id": "task_convex_schema_001",
+        "version": "2.0",
+        "boardId": "board_main",
+        "column": "ready_for_development",
+        "title": "Setup Convex Database Schema for Kanban System",
+        "priority": "critical",
+        "estimatedMinutes": 120,
+        "tags": ["backend", "database", "convex", "infrastructure"],
+        "requiredExpertise": ["Convex", "TypeScript", "NoSQL"],
+        "createdAt": 1699564800000,
+        "createdBy": "system",
+        "assignedTo": "ai"
+      },
+      "instructionReferences": {
+        "primaryInstructions": [
+          {
+            "file": ".agent/instructions/backend.md",
+            "sections": ["FILE STRUCTURE PATTERN", "CONVEX IMPLEMENTATION TEMPLATES", "NAMING PATTERNS"],
+            "rules": [
+              "ALWAYS use Convex for ALL backend operations",
+              "ALWAYS use TypeScript strict mode",
+              "NEVER write comments in code",
+              "ALWAYS create functions < 20 lines"
+            ]
+          }
+        ],
+        "secondaryInstructions": [
+          {
+            "file": ".agent/instructions/source-control.md",
+            "sections": ["COMMIT MESSAGE TEMPLATE"],
+            "rules": ["ALWAYS use conventional commits format"]
+          }
+        ]
+      },
+      "context": {
+        "problemStatement": "Need real-time database to store kanban boards and tasks with instant synchronization",
+        "businessValue": "Core infrastructure enabling all kanban functionality with real-time collaboration",
+        "userStory": "As a developer, I want persistent task storage with real-time updates, so all users see changes immediately",
+        "currentState": {
+          "description": "No database schema exists, Convex installed but unconfigured",
+          "painPoints": ["No data persistence", "No real-time capability", "No type safety"],
+          "files": ["package.json"]
+        },
+        "desiredState": {
+          "description": "Complete Convex schema with boards and tasks tables, indexes, and full type safety",
+          "benefits": ["Real-time sync", "Type-safe queries", "Automatic caching", "Optimistic updates"],
+          "files": ["convex/schema.ts", "convex/_generated/dataModel.d.ts"]
+        },
+        "assumptions": ["Convex package installed", "Developer has Convex account"],
+        "constraints": ["Must use Convex only", "Must support real-time", "Schema must be extensible"],
+        "outOfScope": ["Authentication", "Data migration", "Backup procedures"]
+      },
+      "dependencies": {
+        "taskDependencies": [],
+        "technicalDependencies": {
+          "packages": [
+            {
+              "name": "convex",
+              "version": "^1.13.0",
+              "purpose": "Real-time backend database",
+              "installCommand": "npm install convex"
+            }
+          ],
+          "services": [
+            {
+              "name": "Convex Cloud",
+              "purpose": "Database hosting service",
+              "setupCommand": "npx convex dev"
+            }
+          ],
+          "files": [
+            {
+              "path": "convex/",
+              "purpose": "Convex configuration directory",
+              "mustExist": true
+            }
+          ]
+        },
+        "knowledgeDependencies": {
+          "concepts": ["NoSQL modeling", "Real-time subscriptions", "Optimistic updates", "Database indexes"],
+          "documentation": [
+            "https://docs.convex.dev/database/schemas",
+            "https://docs.convex.dev/database/indexes",
+            "https://docs.convex.dev/database/types"
+          ],
+          "examples": ["https://github.com/get-convex/convex-demos"]
+        }
+      },
+      "testSpecifications": {
+        "approach": "TDD",
+        "unitTests": [
+          {
+            "testId": "schema_test_001",
+            "description": "Boards table has all required fields",
+            "category": "happy-path",
+            "given": "Schema definition with boards table",
+            "when": "TypeScript compiles schema",
+            "then": "name, createdAt, createdBy fields exist with correct types",
+            "priority": "must-pass",
+            "testCode": "// convex/schema.test.ts\nexpect(schema.boards).toHaveProperty('name');\nexpect(schema.boards.name).toBeType('string');"
+          },
+          {
+            "testId": "schema_test_002",
+            "description": "Tasks table has proper indexes",
+            "category": "happy-path",
+            "given": "Tasks table with indexes",
+            "when": "Query by board or column",
+            "then": "Indexes optimize query performance",
+            "priority": "must-pass"
+          },
+          {
+            "testId": "schema_test_003",
+            "description": "Task column values are constrained",
+            "category": "edge-case",
+            "given": "Task with column field",
+            "when": "Invalid column value provided",
+            "then": "Schema validation rejects invalid values",
+            "priority": "should-pass"
+          }
+        ],
+        "integrationTests": [
+          {
+            "testId": "integration_test_001",
+            "description": "Board creation returns valid ID",
+            "category": "happy-path",
+            "given": "Valid board data",
+            "when": "createBoard mutation executes",
+            "then": "Returns string ID starting with correct prefix",
+            "priority": "must-pass"
+          }
+        ],
+        "coverageRequirements": {
+          "unit": 95,
+          "integration": 100,
+          "statements": 95,
+          "branches": 95,
+          "functions": 95,
+          "lines": 95
+        }
+      },
+      "implementation": {
+        "approach": "Create comprehensive Convex schema with TypeScript types, optimized indexes, and real-time subscription support",
+        "steps": [
+          {
+            "stepNumber": 1,
+            "title": "Initialize Convex schema file",
+            "description": "Create schema.ts with required imports",
+            "files": [
+              {
+                "operation": "create",
+                "path": "convex/schema.ts",
+                "purpose": "Main schema definition",
+                "codeSnippet": "import { defineSchema, defineTable } from 'convex/server';\nimport { v } from 'convex/values';"
+              }
+            ],
+            "validation": {
+              "command": "test -f convex/schema.ts",
+              "expectedOutput": "File exists"
+            }
+          },
+          {
+            "stepNumber": 2,
+            "title": "Define boards table",
+            "description": "Add boards table with required fields",
+            "files": [
+              {
+                "operation": "modify",
+                "path": "convex/schema.ts",
+                "purpose": "Add boards table definition"
+              }
+            ],
+            "validation": {
+              "command": "npx convex codegen",
+              "expectedOutput": "✓ Generated code"
+            }
+          },
+          {
+            "stepNumber": 3,
+            "title": "Define tasks table with indexes",
+            "description": "Add tasks table with optimized indexes",
+            "files": [
+              {
+                "operation": "modify",
+                "path": "convex/schema.ts",
+                "purpose": "Add tasks table with indexes"
+              }
+            ],
+            "validation": {
+              "command": "npx convex dev",
+              "expectedOutput": "Functions pushed"
+            }
+          },
+          {
+            "stepNumber": 4,
+            "title": "Verify schema deployment",
+            "description": "Ensure schema is active in Convex cloud",
+            "files": [],
+            "validation": {
+              "command": "npx convex deploy --prod",
+              "expectedOutput": "Deployed to production"
+            }
+          }
+        ],
+        "codeTemplates": {
+          "convexSchema": "// Full schema template\nexport default defineSchema({\n  boards: defineTable({\n    name: v.string(),\n    createdAt: v.number(),\n    createdBy: v.string(),\n  }),\n  tasks: defineTable({\n    boardId: v.id('boards'),\n    column: v.string(),\n    title: v.string(),\n    objective: v.string(),\n    requirements: v.array(v.string()),\n    acceptanceCriteria: v.array(v.string()),\n    position: v.number(),\n    priority: v.string(),\n    estimatedMinutes: v.number(),\n    createdAt: v.number(),\n    updatedAt: v.number(),\n  })\n    .index('by_board', ['boardId'])\n    .index('by_column', ['boardId', 'column'])\n    .index('by_priority', ['priority', 'createdAt']),\n});"
+        }
+      },
+      "acceptanceCriteria": {
+        "functional": [
+          {
+            "id": "ac_func_001",
+            "description": "Schema compiles without TypeScript errors",
+            "priority": "must",
+            "givenWhenThen": {
+              "given": "Complete schema.ts file",
+              "when": "TypeScript compiler runs",
+              "then": "Zero compilation errors"
+            },
+            "verification": {
+              "type": "automated",
+              "method": "TypeScript compilation",
+              "command": "npx tsc convex/schema.ts --noEmit",
+              "expectedResult": "No output (success)"
+            }
+          },
+          {
+            "id": "ac_func_002",
+            "description": "Convex accepts and deploys schema",
+            "priority": "must",
+            "givenWhenThen": {
+              "given": "Valid schema definition",
+              "when": "Deploy to Convex",
+              "then": "Schema active in cloud"
+            },
+            "verification": {
+              "type": "automated",
+              "method": "Convex deployment",
+              "command": "npx convex deploy",
+              "expectedResult": "Deployment successful"
+            }
+          },
+          {
+            "id": "ac_func_003",
+            "description": "Generated types are accessible",
+            "priority": "must",
+            "givenWhenThen": {
+              "given": "Deployed schema",
+              "when": "Import generated types",
+              "then": "Types available for use"
+            },
+            "verification": {
+              "type": "automated",
+              "method": "Type import test",
+              "command": "test -f convex/_generated/dataModel.d.ts",
+              "expectedResult": "File exists"
+            }
+          }
+        ],
+        "nonFunctional": [
+          {
+            "category": "performance",
+            "requirement": "Indexed queries return in < 100ms",
+            "metric": "Query response time",
+            "threshold": "100ms",
+            "measurementMethod": "Convex dashboard metrics"
+          },
+          {
+            "category": "maintainability",
+            "requirement": "Schema extensible without breaking changes",
+            "metric": "Backward compatibility",
+            "threshold": "100% compatibility",
+            "measurementMethod": "Schema migration test"
+          },
+          {
+            "category": "reliability",
+            "requirement": "Schema handles 1000+ tasks per board",
+            "metric": "Data capacity",
+            "threshold": "1000 tasks",
+            "measurementMethod": "Load testing"
+          }
+        ]
+      },
+      "validation": {
+        "preImplementation": [
+          {
+            "name": "Verify Convex installation",
+            "description": "Ensure Convex package is installed",
+            "command": "npm list convex",
+            "expectedOutcome": "convex@1.13.0 or higher",
+            "isBlocking": true
+          },
+          {
+            "name": "Check Convex project",
+            "description": "Verify Convex project is configured",
+            "command": "test -f convex/.env.local",
+            "expectedOutcome": "File exists",
+            "isBlocking": true
+          }
+        ],
+        "duringImplementation": [
+          {
+            "name": "Schema syntax check",
+            "description": "Validate schema syntax",
+            "command": "npx convex codegen",
+            "expectedOutcome": "Generated successfully",
+            "isBlocking": false
+          }
+        ],
+        "postImplementation": [
+          {
+            "name": "TypeScript compilation",
+            "description": "Ensure no type errors",
+            "command": "npm run typecheck",
+            "expectedOutcome": "No errors",
+            "isBlocking": true
+          },
+          {
+            "name": "Schema deployment",
+            "description": "Deploy to Convex cloud",
+            "command": "npx convex deploy",
+            "expectedOutcome": "Deployed successfully",
+            "isBlocking": true
+          },
+          {
+            "name": "Test data creation",
+            "description": "Verify tables accept data",
+            "command": "npm run test:schema",
+            "expectedOutcome": "All tests pass",
+            "isBlocking": true
+          }
+        ],
+        "automatedChecks": {
+          "linting": {
+            "command": "npm run lint convex/",
+            "expectedOutput": "No linting errors",
+            "autoFix": true
+          },
+          "typeChecking": {
+            "command": "npm run typecheck",
+            "expectedOutput": "No type errors"
+          },
+          "testing": {
+            "command": "npm test schema",
+            "expectedOutput": "All tests pass",
+            "coverageReport": true
+          },
+          "building": {
+            "command": "npx convex codegen && npm run build",
+            "expectedOutput": "Build successful"
+          }
+        }
+      },
+      "errorHandling": {
+        "anticipatedErrors": [
+          {
+            "error": "Convex deployment fails",
+            "likelihood": "medium",
+            "cause": "Network issues or invalid schema syntax",
+            "solution": "Check network, validate schema syntax",
+            "prevention": "Test locally with convex dev first"
+          },
+          {
+            "error": "TypeScript type mismatch",
+            "likelihood": "low",
+            "cause": "Incorrect value types used",
+            "solution": "Use correct Convex value types (v.string(), v.number(), etc)",
+            "prevention": "Reference Convex type documentation"
+          },
+          {
+            "error": "Index name conflict",
+            "likelihood": "low",
+            "cause": "Duplicate index names",
+            "solution": "Use unique index names",
+            "prevention": "Follow naming convention by_{field}"
+          }
+        ],
+        "recoveryStrategies": {
+          "rollbackProcedure": [
+            "Delete convex/schema.ts",
+            "Run npx convex dev --clear",
+            "Restore from template",
+            "Redeploy incrementally"
+          ],
+          "fallbackOptions": [
+            "Use minimal schema first",
+            "Add tables incrementally",
+            "Deploy without indexes initially"
+          ],
+          "escalationPath": "Check Convex status page, consult documentation, ask in Discord"
+        },
+        "debugging": {
+          "commonIssues": [
+            {
+              "symptom": "Schema won't deploy",
+              "possibleCauses": ["Syntax error", "Type mismatch", "Missing imports"],
+              "diagnosticSteps": ["Run npx convex codegen", "Check TypeScript errors", "Validate syntax"],
+              "solutions": ["Fix syntax", "Correct types", "Add imports"]
+            }
+          ],
+          "logs": ["convex/_logs/", "Terminal output from convex dev"],
+          "tools": ["Convex dashboard", "TypeScript compiler", "convex codegen"]
+        }
+      },
+      "documentation": {
+        "inlineDocumentation": {
+          "style": "self-documenting",
+          "namingConventions": ["camelCase for fields", "PascalCase for types"],
+          "forbiddenPractices": ["No comments", "No console.log", "No any types"]
+        },
+        "updates": {
+          "readme": true,
+          "changelog": false,
+          "other": ["docs/database-schema.md"]
+        }
+      },
+      "aiGuidance": {
+        "executionMode": "autonomous",
+        "decisionPoints": [
+          {
+            "decision": "Add optional fields to schema?",
+            "options": ["Add now", "Add later", "Skip"],
+            "defaultChoice": "Add later",
+            "criteria": "Only add if explicitly needed for MVP"
+          }
+        ],
+        "successSignals": [
+          "convex/schema.ts exists",
+          "npx convex dev runs without errors",
+          "TypeScript compilation succeeds",
+          "_generated folder created"
+        ],
+        "failureSignals": [
+          "TypeScript errors in schema",
+          "Convex deployment errors",
+          "Missing required tables"
+        ],
+        "progressTracking": {
+          "checkpoints": [
+            {
+              "name": "Schema file created",
+              "percentage": 25,
+              "verification": "File exists",
+              "artifacts": ["convex/schema.ts"]
+            },
+            {
+              "name": "Tables defined",
+              "percentage": 50,
+              "verification": "Both tables present",
+              "artifacts": ["Schema with tables"]
+            },
+            {
+              "name": "Indexes added",
+              "percentage": 75,
+              "verification": "All indexes defined",
+              "artifacts": ["Complete schema"]
+            },
+            {
+              "name": "Deployed successfully",
+              "percentage": 100,
+              "verification": "Convex accepts schema",
+              "artifacts": ["convex/_generated/"]
+            }
+          ],
+          "reportingFormat": "markdown"
+        }
+      },
+      "executionLog": {
+        "attempts": [],
+        "metrics": {},
+        "feedback": {}
+      }
+    }
+  ],
+  "metadata": {
+    "totalTasks": 1,
+    "templateCompliance": "100%",
+    "estimatedTotalHours": 2,
+    "createdAt": "2024-11-08T00:00:00Z",
+    "createdBy": "system",
+    "purpose": "Demonstrate AI-optimized task template v2.0"
+  }
+}
