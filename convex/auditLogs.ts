@@ -15,12 +15,7 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const currentUser = await requirePermission(ctx, "audit:read");
-    
-    // Only admins and superadmins can view audit logs
-    if (currentUser.role !== "admin" && currentUser.role !== "superadmin") {
-      throw new Error("Insufficient permissions to view audit logs");
-    }
+    await requirePermission(ctx, "audit:read");
     
     let query = ctx.db.query("auditLogs");
     
@@ -83,12 +78,7 @@ export const getForUser = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const currentUser = await requirePermission(ctx, "audit:read");
-    
-    // Only admins and superadmins can view audit logs
-    if (currentUser.role !== "admin" && currentUser.role !== "superadmin") {
-      throw new Error("Insufficient permissions to view audit logs");
-    }
+    await requirePermission(ctx, "audit:read");
     
     const limit = args.limit || 50;
     

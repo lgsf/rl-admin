@@ -1,5 +1,6 @@
 import {
   IconBarrierBlock,
+  IconBell,
   IconBrowserCheck,
   IconBug,
   IconChecklist,
@@ -76,6 +77,11 @@ export const sidebarData: SidebarData = {
           title: 'Users',
           url: '/users',
           icon: IconUsers,
+        },
+        {
+          title: 'Notifications',
+          url: '/notifications',
+          icon: IconBell,
         },
         {
           title: 'Audit Logs',
