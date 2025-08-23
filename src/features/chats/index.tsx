@@ -11,12 +11,15 @@ import {
   IconLock,
   IconMessages,
   IconPaperclip,
-  IconPhone,
   IconPhotoPlus,
   IconPlus,
   IconSearch,
   IconSend,
-  IconVideo,
+  IconTrash,
+  IconDownload,
+  IconUserPlus,
+  IconLogout,
+  IconUsers,
 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -27,6 +30,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Main } from '@/components/layout/main'
 import { NewChat } from './components/new-chat'
+import { ChannelDiscovery } from './components/channel-discovery'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   formatMessageTime,
   formatChannelTime,
@@ -43,6 +54,7 @@ export default function Chats() {
   const [mobileSelectedChannel, setMobileSelectedChannel] = useState<boolean>(false)
   const [messageInput, setMessageInput] = useState('')
   const [createConversationDialogOpened, setCreateConversationDialog] = useState(false)
+  const [channelDiscoveryOpened, setChannelDiscoveryOpened] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Fetch current user
@@ -67,6 +79,9 @@ export default function Chats() {
   const sendMessage = useMutation(api.messages.sendMessage)
   const markAsRead = useMutation(api.messages.markChannelAsRead)
   const createChannel = useMutation(api.channels.createChannel)
+  const deleteChannel = useMutation(api.channelActions.deleteChannel)
+  const leaveChannel = useMutation(api.channelActions.leaveChannel)
+  const joinChannel = useMutation(api.channelActions.joinChannel)
   
   // Get selected channel details
   const selectedChannel = channels?.find(c => c._id === selectedChannelId)
@@ -120,6 +135,100 @@ export default function Chats() {
       handleSendMessage()
     }
   }
+
+  // Handle export conversation
+  const handleExportConversation = () => {
+    if (!selectedChannel || !messages) return
+    
+    const exportData = {
+      channel: getChannelDisplayName(selectedChannel, currentUser?._id || ''),
+      type: selectedChannel.type,
+      exportedAt: new Date().toISOString(),
+      messages: messages.messages.map(msg => ({
+        sender: msg.sender ? `${msg.sender.firstName} ${msg.sender.lastName}` : 'Unknown',
+        content: msg.content,
+        timestamp: new Date(msg.createdAt).toISOString(),
+      }))
+    }
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `chat-export-${selectedChannel._id}-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Conversation exported successfully')
+  }
+
+  // Handle delete conversation
+  const handleDeleteConversation = async () => {
+    if (!selectedChannelId || !selectedChannel) return
+    
+    try {
+      // Check if user is owner for non-direct channels
+      if (selectedChannel.type !== 'direct') {
+        const member = channelMembers?.find(m => m.userId === currentUser?._id)
+        if (member?.role !== 'owner') {
+          toast.error('Only channel owners can delete channels')
+          return
+        }
+      }
+      
+      await deleteChannel({ channelId: selectedChannelId })
+      setSelectedChannelId(null)
+      setMobileSelectedChannel(false)
+      toast.success('Conversation deleted successfully')
+    } catch (error) {
+      toast.error('Failed to delete conversation')
+      console.error(error)
+    }
+  }
+
+  // Handle leave channel
+  const handleLeaveChannel = async () => {
+    if (!selectedChannelId || !selectedChannel) return
+    
+    if (selectedChannel.type === 'direct') {
+      toast.error('Cannot leave direct messages')
+      return
+    }
+    
+    try {
+      await leaveChannel({ channelId: selectedChannelId })
+      setSelectedChannelId(null)
+      setMobileSelectedChannel(false)
+      toast.success('Left channel successfully')
+    } catch (error) {
+      toast.error('Failed to leave channel')
+      console.error(error)
+    }
+  }
+
+  // Handle join channel
+  const handleJoinChannel = async () => {
+    if (!selectedChannelId || !selectedChannel) return
+    
+    if (selectedChannel.type !== 'public') {
+      toast.error('Can only join public channels')
+      return
+    }
+    
+    try {
+      await joinChannel({ channelId: selectedChannelId })
+      toast.success('Joined channel successfully')
+    } catch (error) {
+      toast.error('Failed to join channel')
+      console.error(error)
+    }
+  }
+
+  // Check if user is member of selected channel
+  const isChannelMember = channelMembers?.some(m => m.userId === currentUser?._id) || false
+  const isChannelOwner = channelMembers?.find(m => m.userId === currentUser?._id)?.role === 'owner'
 
   // Mark channel as read when selected
   useEffect(() => {
@@ -176,14 +285,26 @@ export default function Chats() {
                 <IconMessages size={20} />
               </div>
 
-              <Button
-                size='icon'
-                variant='ghost'
-                onClick={() => setCreateConversationDialog(true)}
-                className='rounded-lg'
-              >
-                <IconEdit size={24} className='stroke-muted-foreground' />
-              </Button>
+              <div className='flex gap-1'>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  onClick={() => setChannelDiscoveryOpened(true)}
+                  className='rounded-lg'
+                  title='Browse Channels'
+                >
+                  <IconHash size={24} className='stroke-muted-foreground' />
+                </Button>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  onClick={() => setCreateConversationDialog(true)}
+                  className='rounded-lg'
+                  title='New Conversation'
+                >
+                  <IconEdit size={24} className='stroke-muted-foreground' />
+                </Button>
+              </div>
             </div>
 
             <label className='border-input focus-within:ring-ring flex h-12 w-full items-center space-x-0 rounded-md border pl-2 focus-within:ring-1 focus-within:outline-hidden'>
@@ -326,27 +447,56 @@ export default function Chats() {
               </div>
 
               <div className='-mr-1 flex items-center gap-1 lg:gap-2'>
-                <Button
-                  size='icon'
-                  variant='ghost'
-                  className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
-                >
-                  <IconVideo size={22} className='stroke-muted-foreground' />
-                </Button>
-                <Button
-                  size='icon'
-                  variant='ghost'
-                  className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
-                >
-                  <IconPhone size={22} className='stroke-muted-foreground' />
-                </Button>
-                <Button
-                  size='icon'
-                  variant='ghost'
-                  className='h-10 rounded-md sm:h-8 sm:w-4 lg:h-10 lg:w-6'
-                >
-                  <IconDotsVertical className='stroke-muted-foreground sm:size-5' />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size='icon'
+                      variant='ghost'
+                      className='h-10 rounded-md sm:h-8 sm:w-8 lg:h-10 lg:w-10'
+                    >
+                      <IconDotsVertical className='stroke-muted-foreground sm:size-5' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end' className='w-48'>
+                    <DropdownMenuItem onClick={handleExportConversation}>
+                      <IconDownload className='mr-2 h-4 w-4' />
+                      Export Conversation
+                    </DropdownMenuItem>
+                    
+                    {selectedChannel.type !== 'direct' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {selectedChannel.type === 'public' && !isChannelMember && (
+                          <DropdownMenuItem onClick={handleJoinChannel}>
+                            <IconUserPlus className='mr-2 h-4 w-4' />
+                            Join Channel
+                          </DropdownMenuItem>
+                        )}
+                        {isChannelMember && !isChannelOwner && (
+                          <DropdownMenuItem onClick={handleLeaveChannel}>
+                            <IconLogout className='mr-2 h-4 w-4' />
+                            Leave Channel
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => toast.info('Invite members coming soon')}
+                        >
+                          <IconUsers className='mr-2 h-4 w-4' />
+                          Invite Members
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleDeleteConversation}
+                      className='text-destructive focus:text-destructive'
+                    >
+                      <IconTrash className='mr-2 h-4 w-4' />
+                      {selectedChannel.type === 'direct' ? 'Delete Conversation' : 'Delete Channel'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -482,6 +632,11 @@ export default function Chats() {
       <NewChat
         open={createConversationDialogOpened}
         onOpenChange={setCreateConversationDialog}
+      />
+      
+      <ChannelDiscovery
+        open={channelDiscoveryOpened}
+        onOpenChange={setChannelDiscoveryOpened}
       />
     </Main>
   )

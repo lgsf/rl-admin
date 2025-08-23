@@ -1,34 +1,29 @@
 {
   "todos": {
-    "in_progress": [
+    "in_progress": [],
+    "pending": [],
+    "completed": [
       {
         "id": null,
-        "content": "Add join/leave channel functionality"
+        "content": "Remove video/voice call buttons from chat"
+      },
+      {
+        "id": null,
+        "content": "Add export conversation functionality"
+      },
+      {
+        "id": null,
+        "content": "Add delete conversation to menu"
+      },
+      {
+        "id": null,
+        "content": "Add channel browse/search UI"
+      },
+      {
+        "id": null,
+        "content": "Add join/leave channel buttons"
       }
-    ],
-    "pending": [
-      {
-        "id": null,
-        "content": "Add public channel discovery"
-      },
-      {
-        "id": null,
-        "content": "Add delete conversation functionality"
-      },
-      {
-        "id": null,
-        "content": "Fix channel member permissions"
-      },
-      {
-        "id": null,
-        "content": "Add typing indicators and presence"
-      },
-      {
-        "id": null,
-        "content": "Implement file uploads for chat"
-      }
-    ],
-    "completed": []
+    ]
   },
-  "last_update": "2025-08-23T21:11:48Z"
+  "last_update": "2025-08-23T21:20:04Z"
 }
