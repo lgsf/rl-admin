@@ -1,0 +1,41 @@
+{
+  "id": "task_mvp_001",
+  "boardId": "board_main",
+  "column": "ready_for_development",
+  "position": 1,
+  
+  "title": "Setup Convex Database Schema",
+  "objective": "Create real-time database schema for kanban boards and tasks",
+  "priority": "critical",
+  "estimatedMinutes": 120,
+  
+  "instructionFiles": [
+    ".agent/instructions/backend.md",
+    ".agent/instructions/task-creation.md"
+  ],
+  
+  "requirements": [
+    "Create convex/schema.ts file with imports",
+    "Define boards table with name, createdAt, createdBy",
+    "Define tasks table with all required fields",
+    "Add indexes for by_board and by_column queries",
+    "Deploy schema to Convex cloud"
+  ],
+  
+  "acceptanceCriteria": [
+    "Schema file compiles without TypeScript errors",
+    "Convex accepts and deploys the schema",
+    "Generated types are accessible from _generated folder",
+    "Indexes optimize query performance",
+    "Tables support real-time subscriptions"
+  ],
+  
+  "testCommand": "npx convex dev && npm run typecheck",
+  "successIndicator": "Functions pushed successfully with no type errors",
+  
+  "dependencies": [],
+  
+  "createdAt": 1699564800000,
+  "updatedAt": 1699564800000,
+  "createdBy": "system"
+}

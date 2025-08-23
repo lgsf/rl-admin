@@ -21,6 +21,8 @@ export const PERMISSIONS = {
     "messages:*",
     "organizations:read",
     "organizations:write",
+    "audit:read",
+    "audit:write",
   ],
   manager: [
     "users:read",

@@ -1,10 +1,6 @@
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from './components/users-columns'
 import { UsersDialogs } from './components/users-dialogs'
@@ -17,18 +13,12 @@ import { users as mockUsers } from './data/users'
 export default function Users() {
   // Fetch users from Convex
   const convexUsers = useQuery(api.users.list, {})
+  const usersWithGroups = useQuery(api.users.getUsersWithSystemGroups, {})
   
   // Loading state
   if (convexUsers === undefined) {
     return (
       <UsersProvider>
-        <Header fixed>
-          <Search />
-          <div className='ml-auto flex items-center space-x-4'>
-            <ThemeSwitch />
-            <ProfileDropdown />
-          </div>
-        </Header>
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
             <div>
@@ -49,7 +39,7 @@ export default function Users() {
   }
   
   // Transform Convex users to match the expected schema
-  const transformedUsers = convexUsers?.map(user => ({
+  const transformedUsers = usersWithGroups?.users?.map(user => ({
     id: user._id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -58,6 +48,19 @@ export default function Users() {
     phoneNumber: user.phoneNumber || '',
     status: user.status,
     role: user.role,
+    systemGroups: user.systemGroupNames || [],
+    createdAt: new Date(user.createdAt),
+    updatedAt: new Date(user.updatedAt),
+  })) || convexUsers?.map(user => ({
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
+    email: user.email,
+    phoneNumber: user.phoneNumber || '',
+    status: user.status,
+    role: user.role,
+    systemGroups: [],
     createdAt: new Date(user.createdAt),
     updatedAt: new Date(user.updatedAt),
   })) || []
@@ -69,14 +72,6 @@ export default function Users() {
 
   return (
     <UsersProvider>
-      <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2'>
           <div>

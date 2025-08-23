@@ -45,7 +45,7 @@ export const getOrCreateUser = mutation({
       return existingUser._id;
     }
 
-    // Create new user
+    // Create new user with empty relationship arrays
     const userId = await ctx.db.insert("users", {
       clerkId,
       email,
@@ -55,16 +55,41 @@ export const getOrCreateUser = mutation({
       avatar: picture,
       role: "user" as const,
       status: "active" as const,
+      systemGroups: [], // Will be populated after user creation
+      groups: [], // Organization groups
+      memberships: [], // Organization memberships
       preferences: {},
       createdAt: Date.now(),
       updatedAt: Date.now(),
       lastSeenAt: Date.now(),
     });
 
-    // Check if this is the first user (make them admin)
-    const userCount = await ctx.db.query("users").collect();
-    if (userCount.length === 1) {
-      await ctx.db.patch(userId, { role: "admin" as const });
+    // Add user to default "all-users" system group
+    const allUsersGroup = await ctx.db
+      .query("groups")
+      .withIndex("by_slug", (q) => q.eq("slug", "all-users"))
+      .filter((q) => q.eq(q.field("organizationId"), undefined))
+      .first();
+
+    if (allUsersGroup) {
+      // Add to all-users group
+      await ctx.db.insert("groupMembers", {
+        groupId: allUsersGroup._id,
+        userId,
+        role: "member" as const,
+        joinedAt: Date.now(),
+        status: "active" as const,
+      });
+      
+      // Update user with system groups
+      await ctx.db.patch(userId, { 
+        systemGroups: [allUsersGroup._id] 
+      });
+
+      // Update group member count
+      await ctx.db.patch(allUsersGroup._id, {
+        memberCount: (allUsersGroup.memberCount || 0) + 1,
+      });
     }
 
     // Create default organization for the user if needed
@@ -84,8 +109,19 @@ export const getOrCreateUser = mutation({
         updatedAt: Date.now(),
       });
 
-      // Update user with organization
-      await ctx.db.patch(userId, { organizationId: orgId });
+      // Create membership record
+      const membershipId = await ctx.db.insert("memberships", {
+        userId,
+        organizationId: orgId,
+        role: "owner" as const,
+        joinedAt: Date.now(),
+      });
+
+      // Update user with organization and membership
+      await ctx.db.patch(userId, { 
+        organizationId: orgId,
+        memberships: [membershipId]
+      });
     }
 
     return userId;

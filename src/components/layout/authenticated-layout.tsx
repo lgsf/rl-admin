@@ -6,8 +6,14 @@ import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+import { Header } from '@/components/layout/header'
+import { Search } from '@/components/search'
+import { ThemeSwitch } from '@/components/theme-switch'
+import { NotificationBell } from '@/components/notification-bell'
+import { ProfileDropdown } from '@/components/profile-dropdown'
 import SkipToMain from '@/components/skip-to-main'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useStatusCheck } from '@/hooks/use-status-check'
 
 interface Props {
   children?: React.ReactNode
@@ -16,6 +22,9 @@ interface Props {
 export function AuthenticatedLayout({ children }: Props) {
   const { isLoaded, isSignedIn } = useUser()
   const defaultOpen = Cookies.get('sidebar_state') !== 'false'
+  
+  // Check user status (this hook handles the redirect internally)
+  useStatusCheck()
 
   // Loading state
   if (!isLoaded) {
@@ -51,6 +60,17 @@ export function AuthenticatedLayout({ children }: Props) {
             'has-[main.fixed-main]:group-data-[scroll-locked=1]/body:h-svh'
           )}
         >
+          {/* Standard Header for all authenticated pages */}
+          <Header fixed>
+            <Search />
+            <div className='ml-auto flex items-center space-x-4'>
+              <ThemeSwitch />
+              <NotificationBell />
+              <ProfileDropdown />
+            </div>
+          </Header>
+          
+          {/* Page content */}
           {children ? children : <Outlet />}
         </div>
       </SidebarProvider>

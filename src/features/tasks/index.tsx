@@ -1,10 +1,6 @@
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
@@ -21,13 +17,6 @@ export default function Tasks() {
   if (convexTasks === undefined) {
     return (
       <TasksProvider>
-        <Header fixed>
-          <Search />
-          <div className='ml-auto flex items-center space-x-4'>
-            <ThemeSwitch />
-            <ProfileDropdown />
-          </div>
-        </Header>
         <Main>
           <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
             <div>
@@ -51,14 +40,6 @@ export default function Tasks() {
   const tasks = convexTasks || mockTasks
   return (
     <TasksProvider>
-      <Header fixed>
-        <Search />
-        <div className='ml-auto flex items-center space-x-4'>
-          <ThemeSwitch />
-          <ProfileDropdown />
-        </div>
-      </Header>
-
       <Main>
         <div className='mb-2 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
           <div>

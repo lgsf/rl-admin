@@ -21,9 +21,12 @@ export default defineSchema({
       v.literal("superadmin"),
       v.literal("admin"),
       v.literal("manager"),
-      v.literal("cashier"),
       v.literal("user")
     ),
+    // Relationship arrays for tracking memberships
+    systemGroups: v.optional(v.array(v.id("groups"))), // Platform-wide system groups
+    groups: v.optional(v.array(v.id("groups"))), // Organization-specific groups
+    memberships: v.optional(v.array(v.id("memberships"))), // Organization memberships
     status: v.union(
       v.literal("active"),
       v.literal("inactive"),
@@ -186,8 +189,12 @@ export default defineSchema({
     ),
     organizationId: v.id("organizations"),
     createdBy: v.id("users"),
+    recipientId: v.optional(v.id("users")), // For direct messages
+    isSystemChannel: v.optional(v.boolean()), // For admin/system-wide channels
     avatar: v.optional(v.string()),
     lastMessageAt: v.optional(v.number()),
+    archivedAt: v.optional(v.number()),
+    archivedBy: v.optional(v.id("users")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -347,11 +354,93 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     parentType: v.optional(v.string()), // e.g., "task", "message", "user"
     parentId: v.optional(v.string()),
+    // Chat-specific fields
+    channelId: v.optional(v.id("channels")),
+    messageId: v.optional(v.id("messages")),
     url: v.optional(v.string()),
     thumbnailUrl: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
     .index("by_uploader", ["uploadedBy"])
-    .index("by_parent", ["parentType", "parentId"]),
+    .index("by_parent", ["parentType", "parentId"])
+    .index("by_channel", ["channelId"])
+    .index("by_message", ["messageId"]),
+
+  // Flexible groups system - can be standalone or within organizations
+  groups: defineTable({
+    name: v.string(),
+    slug: v.string(), // URL-friendly identifier
+    description: v.optional(v.string()),
+    type: v.union(
+      v.literal("standalone"),
+      v.literal("organization"),
+      v.literal("department"),
+      v.literal("project"),
+      v.literal("custom")
+    ),
+    organizationId: v.optional(v.id("organizations")), // Optional - null for standalone groups
+    parentGroupId: v.optional(v.id("groups")), // For nested groups
+    visibility: v.union(
+      v.literal("public"),
+      v.literal("private"),
+      v.literal("organization")
+    ),
+    icon: v.optional(v.string()), // Group icon/emoji
+    color: v.optional(v.string()), // Group color for UI
+    ownerId: v.id("users"),
+    settings: v.optional(v.object({
+      allowMemberInvites: v.optional(v.boolean()),
+      requireApproval: v.optional(v.boolean()),
+      autoAddNewOrgMembers: v.optional(v.boolean()),
+      notificationDefaults: v.optional(v.object({
+        enabled: v.boolean(),
+        types: v.optional(v.array(v.string())),
+      })),
+    })),
+    metadata: v.optional(v.any()),
+    isActive: v.boolean(),
+    expiresAt: v.optional(v.number()), // For temporary/project groups
+    memberCount: v.optional(v.number()), // Cached member count for performance
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_type", ["type"])
+    .index("by_owner", ["ownerId"])
+    .index("by_parent", ["parentGroupId"])
+    .index("by_slug", ["slug"])
+    .index("by_visibility", ["visibility"])
+    .index("by_active", ["isActive"]),
+
+  // Group membership table
+  groupMembers: defineTable({
+    groupId: v.id("groups"),
+    userId: v.id("users"),
+    role: v.union(
+      v.literal("owner"),
+      v.literal("admin"),
+      v.literal("moderator"),
+      v.literal("member")
+    ),
+    joinedAt: v.number(),
+    invitedBy: v.optional(v.id("users")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending"),
+      v.literal("suspended")
+    ),
+    permissions: v.optional(v.array(v.string())), // Custom permissions
+    notificationOverride: v.optional(v.object({
+      enabled: v.optional(v.boolean()),
+      types: v.optional(v.array(v.string())),
+    })),
+    lastActivityAt: v.optional(v.number()),
+  })
+    .index("by_group", ["groupId"])
+    .index("by_user", ["userId"])
+    .index("by_group_user", ["groupId", "userId"])
+    .index("by_status", ["status"])
+    .index("by_group_status", ["groupId", "status"])
+    .index("by_user_status", ["userId", "status"]),
 });
