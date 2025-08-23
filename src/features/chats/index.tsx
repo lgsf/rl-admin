@@ -31,6 +31,8 @@ import { Badge } from '@/components/ui/badge'
 import { Main } from '@/components/layout/main'
 import { NewChat } from './components/new-chat'
 import { ChannelDiscovery } from './components/channel-discovery'
+import { FileUpload } from './components/file-upload'
+import { FileAttachment } from './components/file-attachment'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -501,8 +503,8 @@ export default function Chats() {
             </div>
 
             {/* Messages Area */}
-            <div className='flex flex-1 flex-col gap-2 rounded-md px-4 pt-0 pb-4'>
-              <ScrollArea ref={scrollAreaRef} className='flex-1'>
+            <div className='flex flex-1 flex-col gap-2 rounded-md px-4 pt-0 pb-4 min-h-0'>
+              <ScrollArea ref={scrollAreaRef} className='flex-1 min-h-0 h-full'>
                 <div className='flex flex-col gap-4 py-4'>
                   {Object.entries(groupedMessages).map(([date, dateMessages]) => (
                     <div key={date}>
@@ -543,6 +545,12 @@ export default function Chats() {
                                 </div>
                               )}
                               <div className='break-words'>{message.content}</div>
+                              {message.fileUrls && message.fileUrls.length > 0 && (
+                                <FileAttachment
+                                  fileUrls={message.fileUrls}
+                                  fileMetadata={message.fileMetadata || []}
+                                />
+                              )}
                               <div
                                 className={cn(
                                   'text-xs opacity-70 mt-1',
@@ -570,32 +578,20 @@ export default function Chats() {
                 }}
               >
                 <div className='border-input focus-within:ring-ring flex flex-1 items-center gap-2 rounded-md border px-2 py-1 focus-within:ring-1 focus-within:outline-hidden lg:gap-4'>
-                  <div className='space-x-1'>
-                    <Button
-                      size='icon'
-                      type='button'
-                      variant='ghost'
-                      className='h-8 rounded-md'
-                    >
-                      <IconPlus size={20} className='stroke-muted-foreground' />
-                    </Button>
-                    <Button
-                      size='icon'
-                      type='button'
-                      variant='ghost'
-                      className='h-8 rounded-md'
-                    >
-                      <IconPaperclip size={20} className='stroke-muted-foreground' />
-                    </Button>
-                    <Button
-                      size='icon'
-                      type='button'
-                      variant='ghost'
-                      className='h-8 rounded-md'
-                    >
-                      <IconPhotoPlus size={20} className='stroke-muted-foreground' />
-                    </Button>
-                  </div>
+                  <FileUpload 
+                    channelId={selectedChannelId}
+                    onUploadComplete={() => {
+                      // Scroll to bottom after file upload
+                      setTimeout(() => {
+                        if (scrollAreaRef.current) {
+                          const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+                          if (scrollContainer) {
+                            scrollContainer.scrollTop = scrollContainer.scrollHeight
+                          }
+                        }
+                      }, 100)
+                    }}
+                  />
                   <input
                     type='text'
                     className='w-full flex-1 bg-inherit py-2 focus-visible:outline-hidden'

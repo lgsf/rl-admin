@@ -20,6 +20,7 @@ import type * as channelActions from "../channelActions.js";
 import type * as channelMembers from "../channelMembers.js";
 import type * as channels from "../channels.js";
 import type * as dashboard from "../dashboard.js";
+import type * as fileUploads from "../fileUploads.js";
 import type * as groupNotifications from "../groupNotifications.js";
 import type * as groups from "../groups.js";
 import type * as lib_permissions from "../lib/permissions.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   channelMembers: typeof channelMembers;
   channels: typeof channels;
   dashboard: typeof dashboard;
+  fileUploads: typeof fileUploads;
   groupNotifications: typeof groupNotifications;
   groups: typeof groups;
   "lib/permissions": typeof lib_permissions;

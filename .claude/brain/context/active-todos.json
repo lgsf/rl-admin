@@ -5,25 +5,21 @@
     "completed": [
       {
         "id": null,
-        "content": "Remove video/voice call buttons from chat"
+        "content": "Create file upload backend in Convex"
       },
       {
         "id": null,
-        "content": "Add export conversation functionality"
+        "content": "Add file attachment UI components"
       },
       {
         "id": null,
-        "content": "Add delete conversation to menu"
+        "content": "Implement file preview in messages"
       },
       {
         "id": null,
-        "content": "Add channel browse/search UI"
-      },
-      {
-        "id": null,
-        "content": "Add join/leave channel buttons"
+        "content": "Add image/document display support"
       }
     ]
   },
-  "last_update": "2025-08-23T21:20:04Z"
+  "last_update": "2025-08-23T21:28:58Z"
 }

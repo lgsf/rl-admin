@@ -102,6 +102,8 @@ export const getMessages = query({
       replyToId: v.optional(v.id("messages")),
       replyTo: v.optional(v.any()), // Parent message
       attachments: v.optional(v.array(v.string())),
+      fileUrls: v.optional(v.array(v.string())), // URLs for attachments
+      fileMetadata: v.optional(v.array(v.any())), // File metadata
       reactions: v.optional(v.array(v.object({
         emoji: v.string(),
         userId: v.id("users"),
@@ -192,10 +194,36 @@ export const getMessages = query({
           }
         }
         
+        // Get file URLs and metadata if there are attachments
+        let fileUrls: string[] = [];
+        let fileMetadata: any[] = [];
+        if (message.attachments && message.attachments.length > 0) {
+          const urlPromises = message.attachments.map(storageId => 
+            ctx.storage.getUrl(storageId)
+          );
+          const metadataPromises = message.attachments.map(storageId =>
+            ctx.db
+              .query("files")
+              .withIndex("by_message", q => q.eq("messageId", message._id))
+              .filter(q => q.eq(q.field("storageId"), storageId))
+              .first()
+          );
+          
+          const [urls, metadata] = await Promise.all([
+            Promise.all(urlPromises),
+            Promise.all(metadataPromises)
+          ]);
+          
+          fileUrls = urls.filter(url => url !== null) as string[];
+          fileMetadata = metadata.filter(m => m !== null);
+        }
+        
         return {
           ...message,
           sender,
           replyTo,
+          fileUrls,
+          fileMetadata,
         };
       })
     );

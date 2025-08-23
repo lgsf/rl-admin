@@ -354,13 +354,18 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     parentType: v.optional(v.string()), // e.g., "task", "message", "user"
     parentId: v.optional(v.string()),
+    // Chat-specific fields
+    channelId: v.optional(v.id("channels")),
+    messageId: v.optional(v.id("messages")),
     url: v.optional(v.string()),
     thumbnailUrl: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
     .index("by_uploader", ["uploadedBy"])
-    .index("by_parent", ["parentType", "parentId"]),
+    .index("by_parent", ["parentType", "parentId"])
+    .index("by_channel", ["channelId"])
+    .index("by_message", ["messageId"]),
 
   // Flexible groups system - can be standalone or within organizations
   groups: defineTable({
