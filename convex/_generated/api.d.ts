@@ -16,6 +16,7 @@ import type {
 import type * as appearance from "../appearance.js";
 import type * as auditLogs from "../auditLogs.js";
 import type * as auth from "../auth.js";
+import type * as channels from "../channels.js";
 import type * as dashboard from "../dashboard.js";
 import type * as groupNotifications from "../groupNotifications.js";
 import type * as groups from "../groups.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   appearance: typeof appearance;
   auditLogs: typeof auditLogs;
   auth: typeof auth;
+  channels: typeof channels;
   dashboard: typeof dashboard;
   groupNotifications: typeof groupNotifications;
   groups: typeof groups;

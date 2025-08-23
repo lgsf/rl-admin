@@ -189,8 +189,12 @@ export default defineSchema({
     ),
     organizationId: v.id("organizations"),
     createdBy: v.id("users"),
+    recipientId: v.optional(v.id("users")), // For direct messages
+    isSystemChannel: v.optional(v.boolean()), // For admin/system-wide channels
     avatar: v.optional(v.string()),
     lastMessageAt: v.optional(v.number()),
+    archivedAt: v.optional(v.number()),
+    archivedBy: v.optional(v.id("users")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

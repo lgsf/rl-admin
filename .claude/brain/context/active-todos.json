@@ -1,7 +1,32 @@
 {
   "todos": {
-    "in_progress": [],
+    "in_progress": [
+      {
+        "id": "54",
+        "content": "Create Convex backend for messages"
+      }
+    ],
     "pending": [
+      {
+        "id": "55",
+        "content": "Add real-time subscriptions to chat UI"
+      },
+      {
+        "id": "56",
+        "content": "Implement channel-based access control"
+      },
+      {
+        "id": "57",
+        "content": "Add direct message functionality"
+      },
+      {
+        "id": "58",
+        "content": "Add typing indicators and presence"
+      },
+      {
+        "id": "47",
+        "content": "Integrate Apps page with Convex"
+      },
       {
         "id": "3",
         "content": "Test system notifications functions in Convex dashboard"
@@ -25,134 +50,10 @@
     ],
     "completed": [
       {
-        "id": "1",
-        "content": "Update SCHEMA_DOCUMENTATION.md with simplified architecture"
-      },
-      {
-        "id": "2",
-        "content": "Create system-roles notification targeting"
-      },
-      {
-        "id": "15",
-        "content": "Fix user creation to add to default system groups"
-      },
-      {
-        "id": "16",
-        "content": "Update documentation with current implementation"
-      },
-      {
-        "id": "6",
-        "content": "Build groups management UI following existing patterns"
-      },
-      {
-        "id": "17",
-        "content": "Hide System Groups menu from non-admin users"
-      },
-      {
-        "id": "18",
-        "content": "Fix users page and add role/system group management"
-      },
-      {
-        "id": "9",
-        "content": "Run lint and typecheck after each implementation"
-      },
-      {
-        "id": "10",
-        "content": "Test group creation and membership flow"
-      },
-      {
-        "id": "19",
-        "content": "Update permissions: superadmin bypass all, role/groups for superadmin only"
-      },
-      {
-        "id": "20",
-        "content": "Implement hard delete for users (remove from DB and Clerk)"
-      },
-      {
-        "id": "21",
-        "content": "Create activate/deactivate user functionality with dialog"
-      },
-      {
-        "id": "22",
-        "content": "Implement access control for suspended/inactive users"
-      },
-      {
-        "id": "23",
-        "content": "Refactor audit logs page to match app patterns"
-      },
-      {
-        "id": "11",
-        "content": "Build notification bell component with badge counter"
-      },
-      {
-        "id": "12",
-        "content": "Create notification dropdown/panel UI"
-      },
-      {
-        "id": "13",
-        "content": "Implement real-time notification subscriptions"
-      },
-      {
-        "id": "8",
-        "content": "Update notification test UI to use new groups"
-      },
-      {
-        "id": "24",
-        "content": "Create comprehensive notification test component"
-      },
-      {
-        "id": "25",
-        "content": "Analyze all core pages for layout patterns"
-      },
-      {
-        "id": "28",
-        "content": "Remove Headers from Dashboard page"
-      },
-      {
-        "id": "29",
-        "content": "Remove Headers from Users page"
-      },
-      {
-        "id": "30",
-        "content": "Remove Headers from Tasks page"
-      },
-      {
-        "id": "31",
-        "content": "Remove Headers from Audit Logs page"
-      },
-      {
-        "id": "32",
-        "content": "Remove Headers from Apps page"
-      },
-      {
-        "id": "33",
-        "content": "Remove Headers from Chats page"
-      },
-      {
-        "id": "34",
-        "content": "Remove Headers from Settings page"
-      },
-      {
-        "id": "35",
-        "content": "Create notifications page main component"
-      },
-      {
-        "id": "39",
-        "content": "Add notifications page route"
-      },
-      {
-        "id": "36",
-        "content": "Add notifications route to sidebar"
-      },
-      {
-        "id": "37",
-        "content": "Create notification filters and search"
-      },
-      {
-        "id": "38",
-        "content": "Implement notification actions (mark read, delete)"
+        "id": "53",
+        "content": "Create Convex backend for channels"
       }
     ]
   },
-  "last_update": "2025-08-10T23:20:55Z"
+  "last_update": "2025-08-23T17:54:27Z"
 }
