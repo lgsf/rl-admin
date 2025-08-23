@@ -2,58 +2,33 @@
   "todos": {
     "in_progress": [
       {
-        "id": "54",
-        "content": "Create Convex backend for messages"
+        "id": null,
+        "content": "Add join/leave channel functionality"
       }
     ],
     "pending": [
       {
-        "id": "55",
-        "content": "Add real-time subscriptions to chat UI"
+        "id": null,
+        "content": "Add public channel discovery"
       },
       {
-        "id": "56",
-        "content": "Implement channel-based access control"
+        "id": null,
+        "content": "Add delete conversation functionality"
       },
       {
-        "id": "57",
-        "content": "Add direct message functionality"
+        "id": null,
+        "content": "Fix channel member permissions"
       },
       {
-        "id": "58",
+        "id": null,
         "content": "Add typing indicators and presence"
       },
       {
-        "id": "47",
-        "content": "Integrate Apps page with Convex"
-      },
-      {
-        "id": "3",
-        "content": "Test system notifications functions in Convex dashboard"
-      },
-      {
-        "id": "4",
-        "content": "Refactor groups.ts for organization-only groups"
-      },
-      {
-        "id": "5",
-        "content": "Create validation helpers for group membership"
-      },
-      {
-        "id": "7",
-        "content": "Create organization group management functions"
-      },
-      {
-        "id": "14",
-        "content": "Document all changes in ACTIVE_SESSION.md"
+        "id": null,
+        "content": "Implement file uploads for chat"
       }
     ],
-    "completed": [
-      {
-        "id": "53",
-        "content": "Create Convex backend for channels"
-      }
-    ]
+    "completed": []
   },
-  "last_update": "2025-08-23T17:54:27Z"
+  "last_update": "2025-08-23T21:11:48Z"
 }
