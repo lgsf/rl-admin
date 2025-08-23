@@ -137,6 +137,22 @@ export const createChannel = mutation({
       );
     }
     
+    // For private channels, add specified participants
+    if (args.type === "private" && args.participants) {
+      await Promise.all(
+        args.participants
+          .filter(userId => userId !== currentUser._id)
+          .map(userId =>
+            ctx.db.insert("channelMembers", {
+              channelId,
+              userId,
+              role: "member",
+              joinedAt: Date.now(),
+            })
+          )
+      );
+    }
+    
     return channelId;
   },
 });

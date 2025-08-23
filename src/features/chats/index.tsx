@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import { Fragment } from 'react/jsx-runtime'
-import { format } from 'date-fns'
+import { useState, useRef, useEffect, KeyboardEvent } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
+import { Id } from '../../../convex/_generated/dataModel'
+import { toast } from 'sonner'
 import {
   IconArrowLeft,
   IconDotsVertical,
   IconEdit,
+  IconHash,
+  IconLock,
   IconMessages,
   IconPaperclip,
   IconPhone,
@@ -19,49 +23,126 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { Main } from '@/components/layout/main'
 import { NewChat } from './components/new-chat'
-import { type ChatUser, type Convo } from './data/chat-types'
-// Fake Data
-import { conversations } from './data/convo.json'
+import {
+  formatMessageTime,
+  formatChannelTime,
+  formatMessageDate,
+  truncateMessage,
+  getInitials,
+  getChannelDisplayName,
+  getChannelIcon,
+} from './utils/format-message'
 
 export default function Chats() {
   const [search, setSearch] = useState('')
-  const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null)
-  const [mobileSelectedUser, setMobileSelectedUser] = useState<ChatUser | null>(
-    null
+  const [selectedChannelId, setSelectedChannelId] = useState<Id<"channels"> | null>(null)
+  const [mobileSelectedChannel, setMobileSelectedChannel] = useState<boolean>(false)
+  const [messageInput, setMessageInput] = useState('')
+  const [createConversationDialogOpened, setCreateConversationDialog] = useState(false)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // Fetch current user
+  const currentUser = useQuery(api.users.getCurrentUser)
+  
+  // Fetch channels
+  const channels = useQuery(api.channels.listChannels)
+  
+  // Fetch messages for selected channel
+  const messages = useQuery(
+    api.messages.getMessages,
+    selectedChannelId ? { channelId: selectedChannelId, limit: 50 } : 'skip'
   )
-  const [createConversationDialogOpened, setCreateConversationDialog] =
-    useState(false)
-
-  // Filtered data based on the search query
-  const filteredChatList = conversations.filter(({ fullName }) =>
-    fullName.toLowerCase().includes(search.trim().toLowerCase())
+  
+  // Fetch channel members
+  const channelMembers = useQuery(
+    api.channelMembers.getMembers,
+    selectedChannelId ? { channelId: selectedChannelId } : 'skip'
   )
+  
+  // Mutations
+  const sendMessage = useMutation(api.messages.sendMessage)
+  const markAsRead = useMutation(api.messages.markChannelAsRead)
+  const createChannel = useMutation(api.channels.createChannel)
+  
+  // Get selected channel details
+  const selectedChannel = channels?.find(c => c._id === selectedChannelId)
+  
+  // Filter channels based on search
+  const filteredChannels = channels?.filter(channel => {
+    const displayName = getChannelDisplayName(channel, currentUser?._id || '')
+    return displayName.toLowerCase().includes(search.trim().toLowerCase())
+  }) || []
 
-  const currentMessage = selectedUser?.messages.reduce(
-    (acc: Record<string, Convo[]>, obj) => {
-      const key = format(obj.timestamp, 'd MMM, yyyy')
+  // Group messages by date
+  const groupedMessages = messages?.messages?.reduce((acc: Record<string, typeof messages.messages>, message) => {
+    const dateKey = formatMessageDate(message.createdAt)
+    if (!acc[dateKey]) {
+      acc[dateKey] = []
+    }
+    acc[dateKey].push(message)
+    return acc
+  }, {}) || {}
 
-      // Create an array for the category if it doesn't exist
-      if (!acc[key]) {
-        acc[key] = []
+  // Handle sending message
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChannelId) return
+    
+    try {
+      await sendMessage({
+        channelId: selectedChannelId,
+        content: messageInput.trim(),
+      })
+      setMessageInput('')
+      
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight
+          }
+        }
+      }, 100)
+    } catch (error) {
+      toast.error('Failed to send message')
+      console.error(error)
+    }
+  }
+
+  // Handle key press in message input
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  // Mark channel as read when selected
+  useEffect(() => {
+    if (selectedChannelId) {
+      markAsRead({ channelId: selectedChannelId }).catch(console.error)
+    }
+  }, [selectedChannelId, markAsRead])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messages && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
       }
+    }
+  }, [messages])
 
-      // Push the current object to the array
-      acc[key].push(obj)
-
-      return acc
-    },
-    {}
-  )
-
-  const users = conversations.map(({ messages, ...user }) => user)
-
-  return (
-    <Main fixed>
+  // Loading state
+  if (channels === undefined || currentUser === undefined) {
+    return (
+      <Main fixed>
         <section className='flex h-full gap-6'>
-          {/* Left Side */}
           <div className='flex w-full flex-col gap-2 sm:w-56 lg:w-72 2xl:w-80'>
             <div className='bg-background sticky top-0 z-10 -mx-4 px-4 pb-3 shadow-md sm:static sm:z-auto sm:mx-0 sm:p-0 sm:shadow-none'>
               <div className='flex items-center justify-between py-2'>
@@ -69,263 +150,339 @@ export default function Chats() {
                   <h1 className='text-2xl font-bold'>Inbox</h1>
                   <IconMessages size={20} />
                 </div>
+              </div>
+              <Skeleton className='h-10 w-full' />
+            </div>
+            <div className='space-y-2'>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className='h-16 w-full' />
+              ))}
+            </div>
+          </div>
+        </section>
+      </Main>
+    )
+  }
 
+  return (
+    <Main fixed>
+      <section className='flex h-full gap-6'>
+        {/* Left Side - Channel List */}
+        <div className='flex w-full flex-col gap-2 sm:w-56 lg:w-72 2xl:w-80'>
+          <div className='bg-background sticky top-0 z-10 -mx-4 px-4 pb-3 shadow-md sm:static sm:z-auto sm:mx-0 sm:p-0 sm:shadow-none'>
+            <div className='flex items-center justify-between py-2'>
+              <div className='flex gap-2'>
+                <h1 className='text-2xl font-bold'>Inbox</h1>
+                <IconMessages size={20} />
+              </div>
+
+              <Button
+                size='icon'
+                variant='ghost'
+                onClick={() => setCreateConversationDialog(true)}
+                className='rounded-lg'
+              >
+                <IconEdit size={24} className='stroke-muted-foreground' />
+              </Button>
+            </div>
+
+            <label className='border-input focus-within:ring-ring flex h-12 w-full items-center space-x-0 rounded-md border pl-2 focus-within:ring-1 focus-within:outline-hidden'>
+              <IconSearch size={15} className='mr-2 stroke-slate-500' />
+              <span className='sr-only'>Search</span>
+              <input
+                type='text'
+                className='w-full flex-1 bg-inherit text-sm focus-visible:outline-hidden'
+                placeholder='Search chat...'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <ScrollArea className='-mx-3 h-full overflow-scroll p-3'>
+            {filteredChannels.map((channel) => {
+              const displayName = getChannelDisplayName(channel, currentUser?._id || '')
+              const icon = getChannelIcon(channel.type)
+              const lastMessage = channel.lastMessage
+              const isSelected = selectedChannelId === channel._id
+              
+              return (
+                <div key={channel._id}>
+                  <button
+                    type='button'
+                    className={cn(
+                      `hover:bg-secondary/75 -mx-1 flex w-full rounded-md px-2 py-2 text-left text-sm`,
+                      isSelected && 'sm:bg-muted'
+                    )}
+                    onClick={() => {
+                      setSelectedChannelId(channel._id)
+                      setMobileSelectedChannel(true)
+                    }}
+                  >
+                    <div className='flex w-full gap-2'>
+                      {channel.type === 'direct' && channel.otherUser ? (
+                        <Avatar>
+                          <AvatarImage src={channel.otherUser.avatar} alt={displayName} />
+                          <AvatarFallback>
+                            {getInitials(channel.otherUser.firstName, channel.otherUser.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className='flex h-10 w-10 items-center justify-center rounded-full bg-muted'>
+                          {icon === '#' ? (
+                            <IconHash size={20} className='text-muted-foreground' />
+                          ) : icon === '🔒' ? (
+                            <IconLock size={20} className='text-muted-foreground' />
+                          ) : (
+                            <span className='text-lg'>{icon}</span>
+                          )}
+                        </div>
+                      )}
+                      <div className='flex-1 overflow-hidden'>
+                        <div className='flex items-center justify-between'>
+                          <span className='font-medium'>
+                            {displayName}
+                          </span>
+                          {channel.lastMessageAt && (
+                            <span className='text-xs text-muted-foreground'>
+                              {formatChannelTime(channel.lastMessageAt)}
+                            </span>
+                          )}
+                        </div>
+                        {lastMessage && (
+                          <span className='text-muted-foreground line-clamp-1 text-xs'>
+                            {lastMessage.sender?._id === currentUser?._id ? 'You: ' : ''}
+                            {truncateMessage(lastMessage.content)}
+                          </span>
+                        )}
+                        {channel.unreadCount > 0 && (
+                          <Badge variant='default' className='mt-1 h-5 px-1.5 text-xs'>
+                            {channel.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                  <Separator className='my-1' />
+                </div>
+              )
+            })}
+          </ScrollArea>
+        </div>
+
+        {/* Right Side - Chat View */}
+        {selectedChannel ? (
+          <div
+            className={cn(
+              'bg-primary-foreground absolute inset-0 left-full z-50 hidden w-full flex-1 flex-col rounded-md border shadow-xs transition-all duration-200 sm:static sm:z-auto sm:flex',
+              mobileSelectedChannel && 'left-0 flex'
+            )}
+          >
+            {/* Top Part - Channel Header */}
+            <div className='bg-secondary mb-1 flex flex-none justify-between rounded-t-md p-4 shadow-lg'>
+              <div className='flex gap-3'>
                 <Button
                   size='icon'
                   variant='ghost'
-                  onClick={() => setCreateConversationDialog(true)}
-                  className='rounded-lg'
+                  className='-ml-2 h-full sm:hidden'
+                  onClick={() => setMobileSelectedChannel(false)}
                 >
-                  <IconEdit size={24} className='stroke-muted-foreground' />
+                  <IconArrowLeft />
                 </Button>
-              </div>
-
-              <label className='border-input focus-within:ring-ring flex h-12 w-full items-center space-x-0 rounded-md border pl-2 focus-within:ring-1 focus-within:outline-hidden'>
-                <IconSearch size={15} className='mr-2 stroke-slate-500' />
-                <span className='sr-only'>Search</span>
-                <input
-                  type='text'
-                  className='w-full flex-1 bg-inherit text-sm focus-visible:outline-hidden'
-                  placeholder='Search chat...'
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <ScrollArea className='-mx-3 h-full overflow-scroll p-3'>
-              {filteredChatList.map((chatUsr) => {
-                const { id, profile, username, messages, fullName } = chatUsr
-                const lastConvo = messages[0]
-                const lastMsg =
-                  lastConvo.sender === 'You'
-                    ? `You: ${lastConvo.message}`
-                    : lastConvo.message
-                return (
-                  <Fragment key={id}>
-                    <button
-                      type='button'
-                      className={cn(
-                        `hover:bg-secondary/75 -mx-1 flex w-full rounded-md px-2 py-2 text-left text-sm`,
-                        selectedUser?.id === id && 'sm:bg-muted'
-                      )}
-                      onClick={() => {
-                        setSelectedUser(chatUsr)
-                        setMobileSelectedUser(chatUsr)
-                      }}
-                    >
-                      <div className='flex gap-2'>
-                        <Avatar>
-                          <AvatarImage src={profile} alt={username} />
-                          <AvatarFallback>{username}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className='col-start-2 row-span-2 font-medium'>
-                            {fullName}
-                          </span>
-                          <span className='text-muted-foreground col-start-2 row-span-2 row-start-2 line-clamp-2 text-ellipsis'>
-                            {lastMsg}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                    <Separator className='my-1' />
-                  </Fragment>
-                )
-              })}
-            </ScrollArea>
-          </div>
-
-          {/* Right Side */}
-          {selectedUser ? (
-            <div
-              className={cn(
-                'bg-primary-foreground absolute inset-0 left-full z-50 hidden w-full flex-1 flex-col rounded-md border shadow-xs transition-all duration-200 sm:static sm:z-auto sm:flex',
-                mobileSelectedUser && 'left-0 flex'
-              )}
-            >
-              {/* Top Part */}
-              <div className='bg-secondary mb-1 flex flex-none justify-between rounded-t-md p-4 shadow-lg'>
-                {/* Left */}
-                <div className='flex gap-3'>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='-ml-2 h-full sm:hidden'
-                    onClick={() => setMobileSelectedUser(null)}
-                  >
-                    <IconArrowLeft />
-                  </Button>
-                  <div className='flex items-center gap-2 lg:gap-4'>
+                <div className='flex items-center gap-2 lg:gap-4'>
+                  {selectedChannel.type === 'direct' && selectedChannel.otherUser ? (
                     <Avatar className='size-9 lg:size-11'>
-                      <AvatarImage
-                        src={selectedUser.profile}
-                        alt={selectedUser.username}
+                      <AvatarImage 
+                        src={selectedChannel.otherUser.avatar} 
+                        alt={selectedChannel.otherUser.username} 
                       />
-                      <AvatarFallback>{selectedUser.username}</AvatarFallback>
+                      <AvatarFallback>
+                        {getInitials(
+                          selectedChannel.otherUser.firstName, 
+                          selectedChannel.otherUser.lastName
+                        )}
+                      </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <span className='col-start-2 row-span-2 text-sm font-medium lg:text-base'>
-                        {selectedUser.fullName}
-                      </span>
-                      <span className='text-muted-foreground col-start-2 row-span-2 row-start-2 line-clamp-1 block max-w-32 text-xs text-nowrap text-ellipsis lg:max-w-none lg:text-sm'>
-                        {selectedUser.title}
-                      </span>
+                  ) : (
+                    <div className='flex size-9 items-center justify-center rounded-full bg-muted lg:size-11'>
+                      {getChannelIcon(selectedChannel.type) === '#' ? (
+                        <IconHash size={24} />
+                      ) : (
+                        <IconLock size={24} />
+                      )}
                     </div>
+                  )}
+                  <div>
+                    <span className='col-start-2 row-span-2 text-sm font-medium lg:text-base'>
+                      {getChannelDisplayName(selectedChannel, currentUser?._id || '')}
+                    </span>
+                    <span className='text-muted-foreground col-start-2 row-span-2 row-start-2 line-clamp-1 block text-xs lg:text-sm'>
+                      {selectedChannel.type === 'direct' 
+                        ? 'Direct Message' 
+                        : `${channelMembers?.length || 0} members`}
+                    </span>
                   </div>
                 </div>
-
-                {/* Right */}
-                <div className='-mr-1 flex items-center gap-1 lg:gap-2'>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
-                  >
-                    <IconVideo size={22} className='stroke-muted-foreground' />
-                  </Button>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
-                  >
-                    <IconPhone size={22} className='stroke-muted-foreground' />
-                  </Button>
-                  <Button
-                    size='icon'
-                    variant='ghost'
-                    className='h-10 rounded-md sm:h-8 sm:w-4 lg:h-10 lg:w-6'
-                  >
-                    <IconDotsVertical className='stroke-muted-foreground sm:size-5' />
-                  </Button>
-                </div>
               </div>
 
-              {/* Conversation */}
-              <div className='flex flex-1 flex-col gap-2 rounded-md px-4 pt-0 pb-4'>
-                <div className='flex size-full flex-1'>
-                  <div className='chat-text-container relative -mr-4 flex flex-1 flex-col overflow-y-hidden'>
-                    <div className='chat-flex flex h-40 w-full grow flex-col-reverse justify-start gap-4 overflow-y-auto py-2 pr-4 pb-4'>
-                      {currentMessage &&
-                        Object.keys(currentMessage).map((key) => (
-                          <Fragment key={key}>
-                            {currentMessage[key].map((msg, index) => (
+              <div className='-mr-1 flex items-center gap-1 lg:gap-2'>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
+                >
+                  <IconVideo size={22} className='stroke-muted-foreground' />
+                </Button>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='hidden size-8 rounded-full sm:inline-flex lg:size-10'
+                >
+                  <IconPhone size={22} className='stroke-muted-foreground' />
+                </Button>
+                <Button
+                  size='icon'
+                  variant='ghost'
+                  className='h-10 rounded-md sm:h-8 sm:w-4 lg:h-10 lg:w-6'
+                >
+                  <IconDotsVertical className='stroke-muted-foreground sm:size-5' />
+                </Button>
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className='flex flex-1 flex-col gap-2 rounded-md px-4 pt-0 pb-4'>
+              <ScrollArea ref={scrollAreaRef} className='flex-1'>
+                <div className='flex flex-col gap-4 py-4'>
+                  {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                    <div key={date}>
+                      <div className='text-center text-xs text-muted-foreground mb-4'>
+                        {date}
+                      </div>
+                      {dateMessages?.map((message) => {
+                        const isOwnMessage = message.senderId === currentUser?._id
+                        const sender = message.sender
+                        
+                        return (
+                          <div
+                            key={message._id}
+                            className={cn(
+                              'mb-4 flex gap-2',
+                              isOwnMessage ? 'justify-end' : 'justify-start'
+                            )}
+                          >
+                            {!isOwnMessage && sender && (
+                              <Avatar className='size-8'>
+                                <AvatarImage src={sender.avatar} alt={sender.username} />
+                                <AvatarFallback>
+                                  {getInitials(sender.firstName, sender.lastName)}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div
+                              className={cn(
+                                'max-w-[70%] rounded-lg px-3 py-2',
+                                isOwnMessage
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary'
+                              )}
+                            >
+                              {!isOwnMessage && sender && (
+                                <div className='text-xs font-medium mb-1'>
+                                  {sender.firstName} {sender.lastName}
+                                </div>
+                              )}
+                              <div className='break-words'>{message.content}</div>
                               <div
-                                key={`${msg.sender}-${msg.timestamp}-${index}`}
                                 className={cn(
-                                  'chat-box max-w-72 px-3 py-2 break-words shadow-lg',
-                                  msg.sender === 'You'
-                                    ? 'bg-primary/85 text-primary-foreground/75 self-end rounded-[16px_16px_0_16px]'
-                                    : 'bg-secondary self-start rounded-[16px_16px_16px_0]'
+                                  'text-xs opacity-70 mt-1',
+                                  isOwnMessage ? 'text-right' : 'text-left'
                                 )}
                               >
-                                {msg.message}{' '}
-                                <span
-                                  className={cn(
-                                    'text-muted-foreground mt-1 block text-xs font-light italic',
-                                    msg.sender === 'You' && 'text-right'
-                                  )}
-                                >
-                                  {format(msg.timestamp, 'h:mm a')}
-                                </span>
+                                {formatMessageTime(message.createdAt)}
+                                {message.editedAt && ' (edited)'}
                               </div>
-                            ))}
-                            <div className='text-center text-xs'>{key}</div>
-                          </Fragment>
-                        ))}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  </div>
+                  ))}
                 </div>
-                <form className='flex w-full flex-none gap-2'>
-                  <div className='border-input focus-within:ring-ring flex flex-1 items-center gap-2 rounded-md border px-2 py-1 focus-within:ring-1 focus-within:outline-hidden lg:gap-4'>
-                    <div className='space-x-1'>
-                      <Button
-                        size='icon'
-                        type='button'
-                        variant='ghost'
-                        className='h-8 rounded-md'
-                      >
-                        <IconPlus
-                          size={20}
-                          className='stroke-muted-foreground'
-                        />
-                      </Button>
-                      <Button
-                        size='icon'
-                        type='button'
-                        variant='ghost'
-                        className='hidden h-8 rounded-md lg:inline-flex'
-                      >
-                        <IconPhotoPlus
-                          size={20}
-                          className='stroke-muted-foreground'
-                        />
-                      </Button>
-                      <Button
-                        size='icon'
-                        type='button'
-                        variant='ghost'
-                        className='hidden h-8 rounded-md lg:inline-flex'
-                      >
-                        <IconPaperclip
-                          size={20}
-                          className='stroke-muted-foreground'
-                        />
-                      </Button>
-                    </div>
-                    <label className='flex-1'>
-                      <span className='sr-only'>Chat Text Box</span>
-                      <input
-                        type='text'
-                        placeholder='Type your messages...'
-                        className='h-8 w-full bg-inherit focus-visible:outline-hidden'
-                      />
-                    </label>
+              </ScrollArea>
+
+              {/* Message Input */}
+              <form 
+                className='flex w-full flex-none gap-2'
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSendMessage()
+                }}
+              >
+                <div className='border-input focus-within:ring-ring flex flex-1 items-center gap-2 rounded-md border px-2 py-1 focus-within:ring-1 focus-within:outline-hidden lg:gap-4'>
+                  <div className='space-x-1'>
                     <Button
-                      variant='ghost'
                       size='icon'
-                      className='hidden sm:inline-flex'
+                      type='button'
+                      variant='ghost'
+                      className='h-8 rounded-md'
                     >
-                      <IconSend size={20} />
+                      <IconPlus size={20} className='stroke-muted-foreground' />
+                    </Button>
+                    <Button
+                      size='icon'
+                      type='button'
+                      variant='ghost'
+                      className='h-8 rounded-md'
+                    >
+                      <IconPaperclip size={20} className='stroke-muted-foreground' />
+                    </Button>
+                    <Button
+                      size='icon'
+                      type='button'
+                      variant='ghost'
+                      className='h-8 rounded-md'
+                    >
+                      <IconPhotoPlus size={20} className='stroke-muted-foreground' />
                     </Button>
                   </div>
-                  <Button className='h-full sm:hidden'>
-                    <IconSend size={18} /> Send
-                  </Button>
-                </form>
-              </div>
-            </div>
-          ) : (
-            <div
-              className={cn(
-                'bg-primary-foreground absolute inset-0 left-full z-50 hidden w-full flex-1 flex-col justify-center rounded-md border shadow-xs transition-all duration-200 sm:static sm:z-auto sm:flex'
-              )}
-            >
-              <div className='flex flex-col items-center space-y-6'>
-                <div className='border-border flex size-16 items-center justify-center rounded-full border-2'>
-                  <IconMessages className='size-8' />
-                </div>
-                <div className='space-y-2 text-center'>
-                  <h1 className='text-xl font-semibold'>Your messages</h1>
-                  <p className='text-muted-foreground text-sm'>
-                    Send a message to start a chat.
-                  </p>
+                  <input
+                    type='text'
+                    className='w-full flex-1 bg-inherit py-2 focus-visible:outline-hidden'
+                    placeholder='Type a message...'
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                  />
                 </div>
                 <Button
-                  className='bg-blue-500 px-6 text-white hover:bg-blue-600'
-                  onClick={() => setCreateConversationDialog(true)}
+                  size='icon'
+                  type='submit'
+                  disabled={!messageInput.trim()}
+                  className='rounded-md'
                 >
-                  Send message
+                  <IconSend size={20} />
                 </Button>
-              </div>
+              </form>
             </div>
-          )}
-        </section>
-        <NewChat
-          users={users}
-          onOpenChange={setCreateConversationDialog}
-          open={createConversationDialogOpened}
-        />
+          </div>
+        ) : (
+          <div className='hidden flex-1 items-center justify-center sm:flex'>
+            <div className='text-center'>
+              <IconMessages size={64} className='mx-auto text-muted-foreground mb-4' />
+              <h3 className='text-lg font-medium'>Select a conversation</h3>
+              <p className='text-sm text-muted-foreground'>
+                Choose a conversation from the list to start chatting
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <NewChat
+        open={createConversationDialogOpened}
+        onOpenChange={setCreateConversationDialog}
+      />
     </Main>
   )
 }
